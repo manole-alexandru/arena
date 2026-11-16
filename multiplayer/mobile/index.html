@@ -328,7 +328,7 @@ const CLASSES = {
       {k:'A',name:'Eagle Eye',cd:13,kind:'ward',range:900,r:340,dur:6,color:'#fff2a0',desc:'Utility: place an eye at the cursor: you see everything inside it for 6s, even through walls and fog.'},
       {k:'S',name:'Rapid Fire',cd:11,kind:'buff',as:[2,4],color:'#ffd27a',ai:'buff',desc:'+100% attack speed for 4s.'},
       {k:'D',off:true,name:'Snare Trap',cd:5,kind:'mine',range:360,trig:70,arm:.6,life:14,dmg:60,stun:1.2,color:'#c9a050',ai:'mine',desc:'Hidden trap that deals 60 and stuns for 1.2s. You can keep 3 out at once.'},
-      {k:'F',off:true,name:'Call of the Wild',cd:55,kind:'summon',hp:450,dur:25,dmg:30,color:'#ffb066',ai:'summon',ult:true,desc:'ULTIMATE. A beast attacks whoever you are fighting and soaks up enemy projectiles for 25s (450 health).'},
+      {k:'F',off:true,name:'Call of the Wild',cd:55,kind:'summon',hp:450,dur:25,dmg:30,color:'#ffb066',ai:'summon',ult:true,desc:'ULTIMATE. A fast beast attacks whoever you are fighting and soaks up enemy projectiles for 25s (450 health). You can walk through it.'},
     ]},
   paladin: {
     name:'Paladin', shape:'shield', c:'#e8c24a', hp:950, speed:240, pref:110,
@@ -349,14 +349,14 @@ const CLASSES = {
     basic:{name:'Shadow Bolt',cd:.6,kind:'proj',speed:780,range:520,pr:8,dmg:20,color:'#b36bff',aiRange:460},
     blurb:'Blood magic: every spell costs health, so every spell hits harder. Curses, damage over time, drain and fear.',
     spells:[
-      {k:'Q',off:true,name:'Soul Siphon',cd:4,cost:25,kind:'proj',speed:700,range:560,pr:11,dmg:150,drain:.9,color:'#6aff9a',ai:'attack',aiRange:520,desc:'Costs 25 health. Dark bolt for 150 damage that heals you for 90% of it.'},
+      {k:'Q',off:true,name:'Soul Siphon',cd:4,kind:'proj',speed:700,range:560,pr:11,dmg:150,drain:.9,color:'#6aff9a',ai:'attack',aiRange:520,desc:'Free. Dark bolt for 150 damage that heals you for 90% of it.'},
       {k:'W',off:true,name:'Agony',cd:6,cost:30,kind:'proj',speed:800,range:600,pr:9,dmg:35,burn:[40,6],color:'#a6d400',ai:'attack',aiRange:560,desc:'Costs 30 health. Bolt that inflicts 40 damage per second for 6s.'},
       {k:'E',name:'Hex',cd:8,cost:20,kind:'proj',speed:900,range:620,pr:9,dmg:0,curse:7,slow:[.6,1.5],color:'#c25bff',ai:'attack',aiRange:580,desc:'Control (costs 20 health): curse an enemy for 7s so they take 25% more damage from everything.'},
       {k:'R',name:'Dread',cd:16,cost:45,kind:'nova',r:250,dmg:0,fear:2.5,color:'#7a3bd0',ai:'close',desc:'Control (costs 45 health): enemies nearby flee from you for 2.5s and cannot act.'},
       {k:'A',off:true,name:'Cursed Ground',cd:12,cost:35,kind:'zone',range:600,r:140,dur:5,dps:36,curse:true,color:'#7a2fb0',ai:'attack',aiRange:500,desc:'Costs 35 health. Cursed zone for 5s: it hurts and curses everyone inside.'},
       {k:'S',name:'Dark Pact',cd:11,cost:90,kind:'buff',shield:[320,6],color:'#ff4a8a',ai:'defend',desc:'Defensive: sacrifice 90 health for a 320 shield lasting 6s.'},
       {k:'D',off:true,name:'Soul Rend',cd:5,cost:30,kind:'nova',r:190,dmg:90,drain:.7,color:'#6aff9a',ai:'close',desc:'Costs 30 health. Tear at everything around you for 90 and heal for 70% of the damage.'},
-      {k:'F',off:true,name:'Soul Harvest',cd:60,cost:100,kind:'aura',dur:8,r:360,dps:70,color:'#6aff9a',ai:'close',ult:true,desc:'ULTIMATE (costs 100 health). For 8s you drain 70 health per second from every enemy within 360 and heal from it. You can still move and cast.'},
+      {k:'F',off:true,name:'Soul Harvest',cd:60,kind:'aura',dur:8,r:360,dps:70,color:'#6aff9a',ai:'close',ult:true,desc:'ULTIMATE (free). For 8s you drain 70 health per second from every enemy within 360 and heal from it. You can still move and cast.'},
     ]},
   wildshaper: {
     name:'Wildshaper', shape:'star', c:'#1f6b3a', hp:800, speed:240, pref:200, playerOnly:true,
@@ -372,6 +372,34 @@ const CLASSES = {
       {k:'D',off:true,name:'Spore Cloud',cd:11,kind:'zone',range:600,r:140,dur:5,dps:26,reveal:true,slow:[.8,.4],color:'#b8e64a',desc:'Poison cloud for 5s: it hurts, slows a little and reveals invisible enemies.'},
       {k:'F',off:true,name:'Primal Avatar',cd:60,kind:'avatar',avatar:8,hp:300,dr:.3,spd:1.3,r:280,dmg:160,stun:1.2,color:'#6aff6a',ult:true,desc:'ULTIMATE. For 8s you are wolf, bear and hawk at once: +30% speed, +300 health, 30% less damage, flight over walls and a bleeding maul. You cannot shift out. When it ends, one big nova (160 damage, 1.2s stun) bursts around you.'},
     ]},
+  fool: {
+    name:'The Fool', shape:'jester', c:'#ffd24a', hp:680, speed:235, pref:260, playerOnly:true,
+    basic:{name:'Lucky Coin',cd:.6,kind:'proj',speed:820,range:520,pr:7,dmg:22,color:'#ffe27a',aiRange:470},
+    blurb:'Tarot wild card (0). Borrows other heroes\u2019 spells, cheats death, tears portals through walls and may become anyone. Player-only.',
+    spells:[
+      {k:'Q',off:true,name:'Wild Card',cd:4,kind:'wildcard',color:'#ffd24a',desc:'Draw a card: fire a random damaging ability borrowed from another hero (Fireball, Meteor, Cleave, Power Shot, Judgment...).'},
+      {k:'W',name:'Ignorance is Bliss',cd:12,kind:'dash',dist:320,dur:.2,bliss:1,color:'#8fe3ff',desc:'Movement: dash forward and become immune to all damage for 1s.'},
+      {k:'E',name:'Uncharted Path',cd:14,kind:'portal',range:780,dur:8,r:44,color:'#9a7aff',desc:'Open a two-way portal for 8s: one end beside you, the other up to 780 away in a straight line - straight through walls. You AND your enemies can use it.'},
+      {k:'R',off:true,name:'Leap of Faith',cd:20,kind:'leap',dist:900,phase:true,nova:{r:170,dmg:200},color:'#ff6a9a',desc:'Teleport (range 900, through walls) to ground you CANNOT see and crash down for 200 damage around you. Fails if the spot is in your vision.'},
+      {k:'A',name:'Wheel of Fortune',cd:16,kind:'wheel',color:'#ffe27a',desc:'Spin the wheel: gain a random boon for 6s - speed, power, a shield, a heal or quickened cooldowns.'},
+      {k:'S',name:"Fool's Fortune",cd:14,kind:'fortune',dur:12,color:'#fff2a0',desc:'Your next ability acts as if it were upgraded. If it already is upgraded, it has no cooldown. Lasts 12s.'},
+      {k:'D',name:'Beginner Luck',cd:12,kind:'dodge',dur:8,count:1,color:'#7aff9a',desc:'Dodge the next ability that would hit you (lasts 8s).'},
+      {k:'F',off:true,name:'Manifest Destiny',cd:80,kind:'manifest',dur:20,color:'#ff7aff',ult:true,desc:'ULTIMATE. Become a random hero for 20s: you get their spells, body and speed, and every cooldown is halved. Then you turn back into the Fool.'},
+    ]},
+  runekeeper: {
+    name:'Rune Keeper', shape:'runic', c:'#4a6fa5', hp:780, speed:225, pref:300, playerOnly:true,
+    basic:{name:'Runic Bolt',cd:.65,kind:'proj',speed:800,range:520,pr:7,dmg:24,color:'#9ad7ff',aiRange:470},
+    blurb:'Norse stone-carver. Carve flame, ice, thorn and sun runes into the ground (up to 3), then detonate them, fire them, teleport between them or link them into a prison. Player-only.',
+    spells:[
+      {k:'Q',name:'Place Rune',cd:3.5,kind:'runeplace',range:560,dur:22,max:3,color:'#9ad7ff',desc:'Carve the selected rune into the ground at your cursor. Up to 3 runes at once (a 4th erases the oldest); they last 22s and enemies cannot move or destroy them.'},
+      {k:'W',name:'Switch Rune',cd:.25,kind:'runeswap',color:'#e8e0c0',desc:'Cycle the selected rune: Kenaz (flame: burn) > Isa (ice: slow + root) > Thurisaz (thorn: stun) > Sowilo (sun: heals you).'},
+      {k:'E',name:'Extend Rune',cd:6,kind:'runeextend',ext:12,max:40,color:'#ffd27a',desc:'Add 12s to the rune nearest your cursor and re-carve it into the selected rune.'},
+      {k:'R',off:true,name:'Detonate',cd:9,kind:'runeboom',mult:1.4,rs:1.25,color:'#ff7a2a',desc:'Explode the rune nearest your cursor with its effect (stronger than a normal blast). The rune is used up.'},
+      {k:'A',off:true,name:'Runic Volley',cd:8,kind:'runevolley',color:'#9ad7ff',desc:'Every placed rune fires a bolt at the nearest enemy (or your cursor) carrying its own effect.'},
+      {k:'S',name:'Rune Gate',cd:18,kind:'runeport',chan:1,color:'#c79bff',desc:'Needs 3 runes. After a 1s channel (you cannot act) you teleport to the middle of your rune circle.'},
+      {k:'D',off:true,name:'Rune Throw',cd:6,kind:'runethrow',color:'#ffe27a',desc:'Hurl a RANDOM rune. It bursts with its effect when it hits an enemy; if it misses it stays on the ground as one of your runes.'},
+      {k:'F',off:true,name:'Rune Seal',cd:70,kind:'runeseal',dur:6,color:'#ff7a2a',ult:true,desc:'ULTIMATE. Needs 3 runes. They link into a glowing triangle: enemies inside are TRAPPED for 6s while every rune keeps striking them with its own effect.'},
+    ]},
 };
 // Upgraded spell versions picked up from the Upgrade room: [overrides, description]
 const UPG={
@@ -382,9 +410,12 @@ const UPG={
   paladin:[[{r:185,dmg:155,stun:.8,cd:2.5},'Wider, harder, longer stun.'],[{boost:[1.55,7],as:[1.6,7],holy:[.35,7],cd:8},'Stronger and lasts 7s.'],[{shield:[420,10],cd:8},'420 shield, shorter cooldown.'],[{r:205,dmg:270,stun:1.2,cd:14},'Bigger, deadlier judgment.'],[{dmg:120,stun:1.1,pierce:true,cd:4},'Pierces, harder stun.'],[{heal:360,shield:[120,5],cd:10},'Heals 360 and shields.'],[{r:200,dur:6,dps:40,healOwner:65,cd:8},'Bigger, longer, heals more.'],[{ascend:14,shield:[500,14],boost:[1.6,14],as:[1.8,14],cd:55},'Lasts 14s, much stronger.']],
   warlock:[[{dmg:230,drain:1.2,cd:3},'Bigger bolt, heals 120%.'],[{dmg:50,burn:[65,7],cd:5},'Much stronger damage over time.'],[{curse:10,slow:[.4,2],pierce:true,cd:6},'Pierces: curses everything it passes.'],[{r:320,fear:3.5,cd:13},'Wider, longer fear.'],[{r:190,dur:7,dps:60,cd:9},'Bigger, longer, deadlier.'],[{cost:60,shield:[480,6],haste:[1.3,3],cd:9},'Cheaper, bigger shield, speed.'],[{r:230,dmg:150,drain:.9,cd:4},'Wider and hits much harder.'],[{dur:11,r:440,dps:110,cd:50},'Longer, wider, 110 damage/s.']],
   wildshaper:[[{spd:1.5,cd:2},'Faster wolf, quicker to shift.'],[{hp:500,dr:.4,cd:2},'+500 health and 40% damage reduction.'],[{dur:6,cd:6},'Fly for 6s.'],[{r:185,dmg:90,root:2.2,cd:10},'Bigger, harder, roots for 2.2s.'],[{thorns:[.5,7],dr:[.8,7],cd:9},'Reflect 50% for 7s.'],[{rejuv:[65,5],cd:10},'Heal 65 per second for 5s.'],[{r:190,dur:7,dps:44,cd:8},'Bigger, longer, deadlier cloud.'],[{avatar:11,hp:500,dr:.4,r:340,dmg:260,stun:1.8,cd:50},'Lasts 11s, tougher, and the final nova is bigger and hits much harder.']],
+  fool:[[{twice:true,cd:3},'Draws TWO cards at once.'],[{dist:400,bliss:1.7,cd:9},'Longer dash and 1.7s of immunity.'],[{dur:12,range:1050,cd:11},'Farther, longer-lasting portal.'],[{dist:1200,nova:{r:240,dmg:320},cd:16},'Leap farther and land much harder.'],[{boons:2,cd:12},'Two boons at once.'],[{dur:20,cd:10},'Lasts longer, shorter cooldown.'],[{count:2,dur:14,cd:9},'Dodges the next TWO abilities.'],[{dur:28,cd:65},'Lasts 28s, shorter cooldown.']],
+  runekeeper:[[{dur:36,max:4,cd:2.5},'Runes last 36s; keep up to 4.'],[{cd:0},'No cooldown.'],[{ext:22,cd:4},'+22s and a shorter cooldown.'],[{mult:2,rs:1.5,cd:7},'Much bigger and harder detonation.'],[{double:true,cd:5},'Every rune fires two bolts.'],[{chan:.5,cd:12},'Only a 0.5s channel, shorter cooldown.'],[{count:2,cd:3.5},'Throw two runes at once.'],[{dur:9,cd:55},'Lasts 9s, shorter cooldown.']],
 };
 function spellOf(e,i){
-  const b=CLASSES[e.cls].spells[i];
+  let b=CLASSES[e.cls].spells[i];
+  if(b.kind==='runeswap') b={...b,name:RUNES[e.runeSel|0].name};
   if(e.upg&&e.upg[i]){ const u=UPG[e.cls][i]; return {...b,...u[0],name:b.name+'+',desc:'UPGRADED: '+u[1],upgraded:true}; }
   return b;
 }
@@ -461,6 +492,33 @@ function drawBody(c,cls,color,r,face,form){
       c.fillStyle='#ffb347'; c.beginPath(); c.moveTo(r*1.5,0); c.lineTo(r*.7,-r*.3); c.lineTo(r*.7,r*.3); c.closePath(); c.fill(); c.stroke();
     }
     c.fillStyle='#ffffff'; for(const sg of [-1,1]){ c.beginPath(); c.arc(r*.4,sg*r*.25,r*.11,0,7); c.fill(); }
+  } else if(cls==='fool'){
+    // jester: three belled cap tails, harlequin body, a tarot card in hand
+    c.lineWidth=2.5;
+    for(const [a,col] of [[Math.PI,'#e84a6a'],[Math.PI-.95,'#3b8bff'],[Math.PI+.95,'#3b8bff']]){
+      c.fillStyle=col; c.beginPath(); c.moveTo(Math.cos(a-.55)*r*.55,Math.sin(a-.55)*r*.55);
+      c.quadraticCurveTo(Math.cos(a-.2)*r*1.4,Math.sin(a-.2)*r*1.4,Math.cos(a)*r*1.85,Math.sin(a)*r*1.85);
+      c.quadraticCurveTo(Math.cos(a+.2)*r*1.4,Math.sin(a+.2)*r*1.4,Math.cos(a+.55)*r*.55,Math.sin(a+.55)*r*.55); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle='#ffe27a'; c.beginPath(); c.arc(Math.cos(a)*r*1.92,Math.sin(a)*r*1.92,r*.2,0,7); c.fill(); c.stroke();
+    }
+    c.save(); c.rotate(-.35); c.fillStyle='#fff6e0'; c.fillRect(r*.7,r*.25,r*.55,r*.85); c.strokeRect(r*.7,r*.25,r*.55,r*.85);
+    c.fillStyle='#e84a6a'; c.beginPath(); c.arc(r*.975,r*.675,r*.12,0,7); c.fill(); c.restore();
+    c.fillStyle=color; c.beginPath(); c.arc(0,0,r,0,7); c.fill();
+    c.save(); c.beginPath(); c.arc(0,0,r,0,7); c.clip(); c.rotate(.785); c.fillStyle='#e84a6a'; c.fillRect(0,-r*1.5,r*1.5,r*1.5); c.fillRect(-r*1.5,0,r*1.5,r*1.5); c.restore();
+    c.beginPath(); c.arc(0,0,r,0,7); c.stroke();
+    c.fillStyle='#fff'; for(const sg of [-1,1]){ c.beginPath(); c.arc(r*.45,sg*r*.28,r*.15,0,7); c.fill(); c.fillStyle='#000'; c.beginPath(); c.arc(r*.5,sg*r*.28,r*.07,0,7); c.fill(); c.fillStyle='#fff'; }
+  } else if(cls==='runekeeper'){
+    // Norse rune-carver: horned helm, fur mantle, braided ring, carved staff
+    c.strokeStyle='#5a4126'; c.lineWidth=4; c.beginPath(); c.moveTo(-r*.3,r*.92); c.lineTo(r*1.55,r*.92); c.stroke();
+    c.strokeStyle='rgba(0,0,0,.85)'; c.lineWidth=2.5;
+    c.fillStyle='#9ad7ff'; c.beginPath(); c.moveTo(r*1.95,r*.92); c.lineTo(r*1.6,r*.6); c.lineTo(r*1.25,r*.92); c.lineTo(r*1.6,r*1.24); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle='#6b5a46'; c.beginPath(); for(let i=0;i<16;i++){ const a=i/16*6.2832, rr=i%2?r*1.0:r*1.22; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } c.closePath(); c.fill(); c.stroke();
+    c.fillStyle=color; c.beginPath(); c.arc(0,0,r*.86,0,7); c.fill(); c.stroke();
+    c.strokeStyle='#d8c9a0'; c.lineWidth=1.6; c.beginPath(); for(let a=0;a<=6.2832+.01;a+=.2){ const rr=r*.62+Math.sin(a*5)*r*.07; c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } c.stroke();
+    c.strokeStyle='rgba(0,0,0,.85)'; c.lineWidth=2.5;
+    c.fillStyle='#8a8f99'; c.beginPath(); c.arc(r*.1,0,r*.5,0,7); c.fill(); c.stroke();
+    c.fillStyle='#efe6cf'; for(const sg of [-1,1]){ c.beginPath(); c.moveTo(r*.05,sg*r*.42); c.quadraticCurveTo(-r*.25,sg*r*1.05,r*.45,sg*r*1.35); c.quadraticCurveTo(r*0,sg*r*.85,r*.3,sg*r*.45); c.closePath(); c.fill(); c.stroke(); }
+    c.fillStyle='#9ad7ff'; for(const sg of [-1,1]){ c.beginPath(); c.arc(r*.42,sg*r*.14,r*.07,0,7); c.fill(); }
   } else {
     // warlock: hooded round body, horns and a glowing staff orb
     c.strokeStyle='#4a2c5a'; c.lineWidth=3.5; c.beginPath(); c.moveTo(-r*.3,r*.9); c.lineTo(r*1.5,r*.9); c.stroke();
@@ -485,6 +543,7 @@ let fogOn=false, blessing=null, nextBless=60, pendingBless=null, blessHidden=fal
 let sched={bless:30,pair:45,kinds:null,wb:false}, stations=[], arenaDuel={active:false,t0:0}, thirdEyeUntil=0, choiceHead='', thornLock=false;
 let beasts=[], wards=[], projectiles=[], zones=[], mines=[], effects=[], parts=[], floaters=[], feed=[], ghosts=[], shake=0, dyings=[], shards=[];
 let clickMarks=[], showBoard=false;
+let runes=[], portals=[], seals=[], sealSeq=1;   // Rune Keeper runes + seals, the Fool's portals
 const cam={x:0,y:0};
 const mouse={x:0,y:0}, mouseW={x:0,y:0};
 let mouseHeld=false, atkHeld=false, nextHoldPath=0;
@@ -500,6 +559,7 @@ function makeEnt(name,cls,color,isPlayer){
     stealthUntil:0,empower:null,blockUntil:0,blockArc:2,asUntil:0,asMul:1,boostUntil:0,boostMul:1,holyUntil:0,holyMul:0,curseUntil:0,fearUntil:0,fearSrc:null,undyingUntil:0,ascendUntil:0,aura:null,recastUntil:0,recastFull:0,lastTarget:null,lastTargetT:-99,bThorns:0,bExec:0,bReap:0,bWind:0,bAS:0,bShieldAmt:0,bSlowHit:0,bBurn:0,windUsed:false,nextShield:0,item:null,upg:{},offCd:0,medOn:false,medBonus:0,medS:null,
     burnUntil:0,burnDps:0,burnBy:null,spin:null,dash:null,lastHit:-99,lastBy:null,fl:null,
     form:null,formS:null,formUntil:0,formHp:0,rootUntil:0,thornUntil:0,thornMul:0,regenUntil:0,regenDps:0,avatarUntil:0,revealUntil:0,
+    realCls:null,manUntil:0,foolCd:null,foolUpg:null,fortuneUntil:0,dodgeUntil:0,dodgeLeft:0,dodgeGrace:0,dodgeBy:null,ptCd:0,runeSel:0,tele:null,sealId:0,sealUntil:0,
     ai:isPlayer?null:{t:rnd(0,.3),target:null,retarget:0,repath:0,strafeT:0,gcd:0,stuckT:0,sx:0,sy:0}};
 }
 
@@ -515,8 +575,10 @@ function spawnPoint(e){
   return best||{x:10*T,y:28*T};
 }
 function respawn(e,first){
+  if(e.realCls) endManifest(e);
   clearForm(e);
   e.rootUntil=e.thornUntil=e.regenUntil=e.avatarUntil=e.revealUntil=0;
+  e.fortuneUntil=e.dodgeUntil=e.dodgeGrace=e.ptCd=e.sealUntil=0; e.tele=null;
   const p=spawnPoint(e);
   e.x=e.px=p.x; e.y=e.py=p.y; e.hp=e.maxHp; e.dead=false; e.path=[]; e.dash=null; e.spin=null;
   e.stunUntil=e.slowUntil=e.hasteUntil=e.shieldUntil=e.drUntil=e.burnUntil=0; e.shield=0;
@@ -620,6 +682,10 @@ function drawProj(p){
     case 'dart':
       glow(r*2.2,.4); ctx.translate(x,y); ctx.rotate(a); ctx.strokeStyle=c; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(8,0); ctx.stroke();
       ctx.fillStyle='#eaffd8'; ctx.beginPath(); ctx.moveTo(14,0); ctx.lineTo(6,-3); ctx.lineTo(6,3); ctx.closePath(); ctx.fill(); break;
+    case 'rune': {
+      glow(r*3.2,.55); ctx.translate(x,y); ctx.rotate(now*9+x*.03); ctx.fillStyle='#2a2e38'; ctx.strokeStyle=c; ctx.lineWidth=2;
+      ctx.beginPath(); for(let i=0;i<6;i++){ const aa=i/6*6.2832, rr=r*(i%2?1.1:1.4); ctx.lineTo(Math.cos(aa)*rr,Math.sin(aa)*rr); } ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.rotate(-now*9-x*.03); ctx.lineWidth=1.8; const ti=Math.max(0,RUNES.findIndex(R=>R.col===c)); runeGlyph(ctx,ti,r*.7); break; }
     default:
       glow(r*3,.55); ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,r*.5,0,7); ctx.fill();
@@ -740,11 +806,13 @@ function slow(t,mul,dur){
 function hit(src,t,dmg,fx){
   if(t.dead||now<t.invulnUntil) return;
   if(isBlocked(t,src)){ blockFx(t); return; }
+  if(fx.k&&src&&src!==t&&dodged(t,src)) return;
   if(fx.color) burst(t.x,t.y,fx.color,6,130,.3,3);
   if(src&&!t.isBox){ src.lastTarget=t; src.lastTargetT=now; }
   if(src&&!t.isBox&&src.cls){ const hc=CLASSES[src.cls].hitCdr; if(hc&&src.cd[hc.slot]>now) src.cd[hc.slot]=Math.max(now,src.cd[hc.slot]-hc.amt*((src.upg&&src.upg[hc.slot])?2:1)); }
   if(fx.drain&&src&&!src.dead&&!t.isBox){ src.hp=Math.min(src.maxHp,src.hp+dmg*fx.drain); for(let i=0;i<4;i++) spark(t.x+rnd(-6,6),t.y+rnd(-6,6),(src.x-t.x)*2.2,(src.y-t.y)*2.2,'#6aff9a',3,.4); }
   damage(t,dmg,src);
+  if(fx.healSelf&&src&&!src.dead) src.hp=Math.min(src.maxHp,src.hp+fx.healSelf);
   if(t.dead) return;
   if(fx.pull&&src&&!t.isBox){ const dx=src.x-t.x, dy=src.y-t.y, d=Math.hypot(dx,dy)||1; let m=Math.min(fx.pull,d-src.r-t.r-8); fxTrail(src.x,src.y,t.x,t.y,'#e6e6e6'); while(m>0){ const st=Math.min(10,m); tryMove(t,dx/d*st,dy/d*st); m-=st; } t.path=[]; }
   if(src&&src.bSlowHit) slow(t,1-Math.min(.6,src.bSlowHit),1.5);
@@ -775,8 +843,133 @@ function clampTo(e,tx,ty,range){
    ============================================================ */
 function explodeAt(owner,x,y,s){
   fxRing(x,y,s.explode,s.color,.3); fxFlash(x,y,s.explode*1.1,'#ffd27a',.2); burst(x,y,s.color,18,260,.5,4); addShake(x,y,3);
-  for(const t of foes(owner)) if(Math.hypot(t.x-x,t.y-y)<=s.explode+t.r) hit(owner,t,s.dmg,s);
+  let nh=0;
+  for(const t of foes(owner)) if(Math.hypot(t.x-x,t.y-y)<=s.explode+t.r){ nh++; hit(owner,t,s.dmg,s); }
+  if(s.rune!==undefined&&!nh) placeRune(owner,s.rune,x,y,18,runeCap(owner));
   for(const b of beasts) if(b.owner!==owner&&Math.hypot(b.x-x,b.y-y)<=s.explode+b.r){ b.hp-=s.dmg*(1+(owner.bDmg||0)); b.flash=now; floaters.push({x:b.x,y:b.y-26,v:s.dmg,t0:now,last:now,col:'#fff'}); }
+}
+
+/* ============================================================
+   THE FOOL  &  RUNE KEEPER
+   ============================================================ */
+const RUNES=[
+  {id:'kenaz',name:'Kenaz',title:'Flame',col:'#ff7a2a',dmg:130,r:130,burn:[22,3]},
+  {id:'isa',name:'Isa',title:'Ice',col:'#8fe3ff',dmg:60,r:150,slow:[.35,2.5],root:.6},
+  {id:'thurisaz',name:'Thurisaz',title:'Thorn',col:'#b7e04a',dmg:85,r:125,stun:1.1},
+  {id:'sowilo',name:'Sowilo',title:'Sun',col:'#ffe27a',dmg:70,r:140,heal:130},
+];
+function runeFx(R,m){
+  const f={k:'R',color:R.col};
+  if(R.burn) f.burn=[R.burn[0]*m,R.burn[1]];
+  if(R.slow) f.slow=R.slow;
+  if(R.root) f.root=R.root*Math.min(1,m+.3);
+  if(R.stun) f.stun=R.stun*(m<.5?.35:Math.min(1.4,m));
+  return f;
+}
+function runeBlast(owner,type,x,y,mult,rs){
+  const R=RUNES[type], r=R.r*(rs||1), m=mult||1;
+  fxRing(x,y,r,R.col,.45); fxFlash(x,y,r*.7,'#ffffff',.18); burst(x,y,R.col,22,260,.55,4); ringBurst(x,y,r,R.col,22); addShake(x,y,6);
+  const f=runeFx(R,m);
+  for(const t of foes(owner)) if(Math.hypot(t.x-x,t.y-y)<=r+t.r) hit(owner,t,R.dmg*m,f);
+  if(R.heal&&!owner.dead){ owner.hp=Math.min(owner.maxHp,owner.hp+R.heal*m); floaters.push({x:owner.x,y:owner.y-34,v:0,txt:'+'+Math.round(R.heal*m),t0:now,last:now,col:R.col}); }
+}
+const ownerRunes=e=>runes.filter(r=>r.owner===e);
+const runeCap=e=>{ const q=e.cls==='runekeeper'?spellOf(e,0):null; return (q&&q.max)||3; };
+function nearestRune(e,x,y){ let b=null,bd=1e9; for(const r of runes){ if(r.owner!==e) continue; const d=Math.hypot(r.x-x,r.y-y); if(d<bd){ bd=d; b=r; } } return b; }
+function placeRune(e,type,x,y,dur,max){
+  if(solidAt(x,y)||circleHit(x,y,12)){
+    let ok=false;
+    for(let k=1;k<=40;k++){ const px=x+(e.x-x)*k/40, py=y+(e.y-y)*k/40; if(!circleHit(px,py,12)){ x=px; y=py; ok=true; break; } }
+    if(!ok) return false;
+  }
+  const own=ownerRunes(e), cap=max||3;
+  while(own.length>=cap) runes.splice(runes.indexOf(own.shift()),1);
+  runes.push({x,y,type,owner:e,born:now,until:now+dur,dur});
+  fxRing(x,y,60,RUNES[type].col,.5); burst(x,y,RUNES[type].col,14,170,.5,3.5); addShake(x,y,2);
+  return true;
+}
+const inTri=(p,x,y)=>{
+  const s=(a,b)=>(x-b[0])*(a[1]-b[1])-(a[0]-b[0])*(y-b[1]);
+  const d1=s(p[0],p[1]), d2=s(p[1],p[2]), d3=s(p[2],p[0]);
+  return !(((d1<0)||(d2<0)||(d3<0))&&((d1>0)||(d2>0)||(d3>0)));
+};
+function sealBreak(e){ if(!(e.sealUntil>now)) return false; const q=seals.find(z=>z.id===e.sealId); return !!q&&!inTri(q.pts,e.x,e.y); }
+function finishTele(e){
+  e.tele=null;
+  const own=ownerRunes(e).sort((a,b)=>b.born-a.born).slice(0,3);
+  if(own.length<3||e.dead) return;
+  let cx=0,cy=0; for(const r of own){ cx+=r.x; cy+=r.y; } cx/=3; cy/=3;
+  let px=cx, py=cy;
+  if(circleHit(px,py,e.r)){
+    let found=false;
+    for(let rad=16;rad<=200&&!found;rad+=16) for(let k=0;k<12;k++){ const aa=k*.5236, xx=cx+Math.cos(aa)*rad, yy=cy+Math.sin(aa)*rad; if(!circleHit(xx,yy,e.r)){ px=xx; py=yy; found=true; break; } }
+    if(!found) return;
+  }
+  const ox=e.x, oy=e.y; e.x=e.px=px; e.y=e.py=py; e.path=[];
+  fxRing(ox,oy,50,'#c79bff',.4); fxRing(px,py,70,'#c79bff',.5); fxFlash(px,py,60,'#ffffff',.2); burst(ox,oy,'#c79bff',16,200,.5,3.5); burst(px,py,'#c79bff',22,260,.6,4); fxTrail(ox,oy,px,py,'#c79bff');
+}
+function updateRunes(dt){
+  runes=runes.filter(r=>now<r.until&&!r.owner.dead);
+  for(const r of runes) if(Math.random()<.12) spark(r.x+rnd(-18,18),r.y+rnd(-10,10),rnd(-6,6),rnd(-50,-20),RUNES[r.type].col,rnd(1.5,3),.8);
+  for(let i=seals.length-1;i>=0;i--){
+    const q=seals[i];
+    if(now>=q.until||q.owner.dead){ const cx=(q.pts[0][0]+q.pts[1][0]+q.pts[2][0])/3, cy=(q.pts[0][1]+q.pts[1][1]+q.pts[2][1])/3; fxRing(cx,cy,120,'#f1e2a4',.5); burst(cx,cy,'#f1e2a4',20,260,.6,4); seals.splice(i,1); continue; }
+    if(now>=q.next){
+      q.next+=.75;
+      const inside=foes(q.owner).filter(t=>inTri(q.pts,t.x,t.y));
+      q.types.forEach((ty,j)=>{
+        const R=RUNES[ty], f=runeFx(R,.22), px=q.pts[j][0], py=q.pts[j][1];
+        burst(px,py,R.col,6,120,.35,3);
+        for(const t of inside){ fxTrail(px,py,t.x,t.y,R.col); hit(q.owner,t,R.dmg*.22,f); }
+        if(R.heal&&!q.owner.dead) q.owner.hp=Math.min(q.owner.maxHp,q.owner.hp+22);
+      });
+    }
+  }
+}
+function updatePortals(){
+  portals=portals.filter(p=>now<p.until);
+  for(const p of portals){
+    if(Math.random()<.5){ const a=rnd(0,6.28), k=Math.random()<.5; spark((k?p.ax:p.bx)+Math.cos(a)*p.r,(k?p.ay:p.by)+Math.sin(a)*p.r,-Math.cos(a)*40,-Math.sin(a)*40,p.color,2.5,.5); }
+    for(const t of ents){
+      if(t.dead||t.isBox||flies(t)||t.dash) continue;
+      const inA=Math.hypot(t.x-p.ax,t.y-p.ay)<p.r, inB=Math.hypot(t.x-p.bx,t.y-p.by)<p.r;
+      if(now<t.ptCd){ if(inA||inB) t.ptCd=Math.max(t.ptCd,now+.15); continue; }
+      if(!inA&&!inB) continue;
+      const fx0=inA?p.ax:p.bx, fy0=inA?p.ay:p.by, tx0=inA?p.bx:p.ax, ty0=inA?p.by:p.ay;
+      burst(fx0,fy0,p.color,12,200,.4,3.5); fxRing(fx0,fy0,p.r,p.color,.3);
+      t.x=t.px=tx0; t.y=t.py=ty0; t.path=[]; t.ptCd=now+1.5;
+      burst(tx0,ty0,p.color,14,220,.45,3.5); fxRing(tx0,ty0,p.r,p.color,.35); fxFlash(tx0,ty0,40,'#ffffff',.15);
+    }
+  }
+}
+function dodged(t,src){
+  if(now<t.dodgeGrace&&t.dodgeBy===src) return true;
+  if(now<t.dodgeUntil&&t.dodgeLeft>0){
+    t.dodgeLeft--; if(t.dodgeLeft<=0) t.dodgeUntil=0;
+    t.dodgeGrace=now+.3; t.dodgeBy=src;
+    fxRing(t.x,t.y,52,'#7aff9a',.4); burst(t.x,t.y,'#7aff9a',14,200,.4,3.5);
+    floaters.push({x:t.x,y:t.y-34,v:0,txt:'DODGED',t0:now,last:now,col:'#7aff9a'});
+    return true;
+  }
+  return false;
+}
+let _wild=null;
+function wildPool(){
+  if(_wild) return _wild;
+  _wild=[];
+  for(const key of ['mage','warrior','rogue','ranger','paladin','warlock'])
+    for(const sp of CLASSES[key].spells) if(sp.off&&!sp.ult&&['proj','nova','cone','ground','zone'].includes(sp.kind)) _wild.push({...sp,cost:0});
+  return _wild;
+}
+function endManifest(e){
+  if(!e.realCls) return;
+  clearForm(e); e.medOn=false; e.aura=null; e.spin=null; e.empower=null; e.recastUntil=0; e.ascendUntil=0; e.undyingUntil=0; e.blockUntil=0;
+  const col=CLASSES[e.cls].c;
+  e.cls=e.realCls; e.realCls=null; e.manUntil=0; e.speed=CLASSES[e.cls].speed;
+  e.upg=e.foolUpg||{}; e.foolUpg=null;
+  const sv=e.foolCd||[]; for(let j=0;j<8;j++) e.cd[j]=Math.max(0,sv[j]||0); e.foolCd=null;
+  fxRing(e.x,e.y,80,'#ff7aff',.5); fxFlash(e.x,e.y,60,'#ffffff',.2); burst(e.x,e.y,'#ff7aff',24,260,.6,4);
+  floaters.push({x:e.x,y:e.y-40,v:0,txt:'BACK TO THE FOOL',t0:now,last:now,col:'#ff7aff'});
 }
 const K={
   proj(e,s,a){
@@ -811,6 +1004,7 @@ const K={
     e.path=[];
     if(s.haste){ e.hasteMul=s.haste[0]; e.hasteUntil=now+s.haste[1]; }
     if(s.invuln) e.invulnUntil=now+s.dur+.05;
+    if(s.bliss){ e.invulnUntil=now+s.bliss; fxRing(e.x,e.y,56,s.color,.5); burst(e.x,e.y,s.color,16,200,.5,3.5); }
     if(s.stealth) e.stealthUntil=now+s.stealth+s.dur;
   },
   blink(e,s,a,tx,ty){
@@ -821,7 +1015,7 @@ const K={
     e.x=ox+dx*best; e.y=oy+dy*best; e.path=[];
     fxRing(ox,oy,36,s.color,.3); fxRing(e.x,e.y,36,s.color,.3); fxTrail(ox,oy,e.x,e.y,s.color);
     burst(ox,oy,s.color,16,180,.45,3.5); burst(e.x,e.y,s.color,16,180,.45,3.5); fxFlash(e.x,e.y,34,s.color,.2);
-    if(s.nova) K.nova(e,{...s.nova,color:s.color});
+    if(s.nova) K.nova(e,{...s.nova,color:s.color,k:s.k});
   },
   buff(e,s){
     if(s.shield){ e.shield=s.shield[0]; e.shieldUntil=now+s.shield[1]; }
@@ -867,7 +1061,7 @@ const K={
   summon(e,s){
     beasts=beasts.filter(b=>b.owner!==e);
     const x=e.x+Math.cos(e.face)*85, y=e.y+Math.sin(e.face)*85, ok=!circleHit(x,y,33);
-    beasts.push({x:ok?x:e.x,y:ok?y:e.y,px:0,py:0,r:33,owner:e,hp:s.hp,maxHp:s.hp,speed:285,path:[],moveVec:null,face:e.face,faceLock:0,until:now+s.dur,atkCd:0,dmg:s.dmg,color:e.color,repath:0,flash:-9,t0:now});
+    beasts.push({x:ok?x:e.x,y:ok?y:e.y,px:0,py:0,r:33,owner:e,hp:s.hp,maxHp:s.hp,speed:440,path:[],moveVec:null,face:e.face,faceLock:0,until:now+s.dur,atkCd:0,dmg:s.dmg,color:e.color,repath:0,flash:-9,t0:now});
     fxRing(x,y,70,s.color,.5); burst(x,y,s.color,24,240,.6,4); addShake(x,y,5);
   },
   channel(e,s){ if(e.medOn){ e.medOn=false; return; } e.medOn=true; e.medS=s; e.path=[]; e.moveVec=null; fxRing(e.x,e.y,50,s.color,.4); },
@@ -885,6 +1079,105 @@ const K={
     setForm(e,'avatar',s); addShake(e.x,e.y,8); fxFlash(e.x,e.y,90,'#ffffff',.25); fxRing(e.x,e.y,130,s.color,.6); burst(e.x,e.y,s.color,30,280,.7,4);
     floaters.push({x:e.x,y:e.y-36,v:0,txt:'PRIMAL AVATAR',t0:now,last:now,col:s.color});
   },
+  /* ---- The Fool ---- */
+  wildcard(e,s,a,tx,ty){
+    const pool=wildPool().slice().sort(()=>Math.random()-.5).slice(0,s.twice?2:1);
+    pool.forEach((sp,j)=>{
+      floaters.push({x:e.x,y:e.y-36-j*16,v:0,txt:sp.name,t0:now,last:now,col:sp.color});
+      K[sp.kind](e,sp,a+(j?.12:0),tx,ty);
+    });
+    fxRing(e.x,e.y,46,s.color,.35);
+  },
+  portal(e,s,a,tx,ty){
+    const c=Math.cos(a), sn=Math.sin(a), want=Math.min(s.range,Math.max(200,Math.hypot(tx-e.x,ty-e.y)));
+    let best=-1;
+    for(let i=want;i>=120;i-=8){ if(!circleHit(e.x+c*i,e.y+sn*i,s.r*.6)){ best=i; break; } }
+    if(best<0) return false;
+    const off=e.r+s.r+8, ax=e.x+c*off, ay=e.y+sn*off;
+    if(circleHit(ax,ay,s.r*.6)) return false;
+    portals=portals.filter(p=>p.owner!==e);
+    portals.push({ax,ay,bx:e.x+c*best,by:e.y+sn*best,r:s.r,owner:e,start:now,until:now+s.dur,color:s.color});
+    fxRing(ax,ay,s.r*1.4,s.color,.5); fxRing(e.x+c*best,e.y+sn*best,s.r*1.4,s.color,.5); burst(ax,ay,s.color,16,200,.5,3.5); burst(e.x+c*best,e.y+sn*best,s.color,16,200,.5,3.5);
+  },
+  leap(e,s,a,tx,ty){
+    const p=clampTo(e,tx,ty,s.dist);
+    if(fogOn&&e===player&&!spectating&&visiblePt(p.x,p.y,0)){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }
+    K.blink(e,s,a,tx,ty);
+    addShake(e.x,e.y,10);
+  },
+  wheel(e,s){
+    const all=['speed','power','shield','heal','quicken'].sort(()=>Math.random()-.5).slice(0,s.boons||1), names=[];
+    for(const b of all){
+      if(b==='speed'){ e.hasteMul=1.4; e.hasteUntil=now+6; names.push('SPEED'); }
+      else if(b==='power'){ e.boostMul=1.35; e.boostUntil=now+6; names.push('POWER'); }
+      else if(b==='shield'){ e.shield=260; e.shieldUntil=now+6; names.push('SHIELD'); }
+      else if(b==='heal'){ e.hp=Math.min(e.maxHp,e.hp+230); names.push('HEAL'); }
+      else { for(let j=0;j<8;j++) if(j!==4) e.cd[j]=Math.max(now,e.cd[j]-3); names.push('QUICKEN'); }
+    }
+    floaters.push({x:e.x,y:e.y-40,v:0,txt:'WHEEL: '+names.join(' + '),t0:now,last:now,col:s.color});
+    fxRing(e.x,e.y,70,s.color,.6); for(let i=0;i<18;i++) spark(e.x,e.y,Math.cos(i/18*6.28)*140,Math.sin(i/18*6.28)*140,i%2?'#ffe27a':'#ff6a9a',3,.6);
+  },
+  fortune(e,s){ e.fortuneUntil=now+s.dur; fxRing(e.x,e.y,70,s.color,.6); burst(e.x,e.y,s.color,20,240,.6,4); floaters.push({x:e.x,y:e.y-40,v:0,txt:'NEXT SPELL BLESSED',t0:now,last:now,col:s.color}); },
+  dodge(e,s){ e.dodgeUntil=now+s.dur; e.dodgeLeft=s.count||1; fxRing(e.x,e.y,56,s.color,.5); burst(e.x,e.y,s.color,14,180,.5,3.5); },
+  manifest(e,s){
+    const keys=CLASS_KEYS.filter(k=>k!=='fool'), pick=keys[ri(0,keys.length-1)];
+    e.foolCd=e.cd.slice(); e.foolCd[7]=now+s.cd; e.foolUpg=e.upg; e.upg={};
+    clearForm(e); e.medOn=false; e.aura=null; e.spin=null; e.empower=null;
+    e.realCls='fool'; e.cls=pick; e.manUntil=now+s.dur; e.speed=CLASSES[pick].speed;
+    e.cd.fill(0); e.cd[7]=now+CLASSES[pick].spells[7].cd*.5;
+    fxRing(e.x,e.y,120,s.color,.6); fxFlash(e.x,e.y,90,'#ffffff',.3); burst(e.x,e.y,s.color,34,300,.7,4.5); addShake(e.x,e.y,8);
+    floaters.push({x:e.x,y:e.y-40,v:0,txt:'MANIFEST: '+CLASSES[pick].name.toUpperCase(),t0:now,last:now,col:s.color});
+  },
+  /* ---- Rune Keeper ---- */
+  runeplace(e,s,a,tx,ty){ const p=clampTo(e,tx,ty,s.range); if(!placeRune(e,e.runeSel|0,p.x,p.y,s.dur,s.max)) return false; },
+  runeswap(e,s){ e.runeSel=((e.runeSel|0)+1)%RUNES.length; const R=RUNES[e.runeSel]; floaters.push({x:e.x,y:e.y-38,v:0,txt:R.name+' - '+R.title,t0:now,last:now,col:R.col}); fxRing(e.x,e.y,40,R.col,.3); },
+  runeextend(e,s,a,tx,ty){
+    const r=nearestRune(e,tx,ty); if(!r) return false;
+    r.type=e.runeSel|0; r.until=Math.min(now+s.max,Math.max(r.until,now)+s.ext); r.born=now; r.dur=r.until-now;
+    fxRing(r.x,r.y,80,RUNES[r.type].col,.5); burst(r.x,r.y,RUNES[r.type].col,18,220,.5,3.5);
+  },
+  runeboom(e,s,a,tx,ty){ const r=nearestRune(e,tx,ty); if(!r) return false; runes.splice(runes.indexOf(r),1); runeBlast(e,r.type,r.x,r.y,s.mult,s.rs); },
+  runevolley(e,s,a,tx,ty){
+    const own=ownerRunes(e); if(!own.length) return false;
+    for(const r of own){
+      const R=RUNES[r.type]; let t=null,bd=780;
+      for(const o of foes(e)){ if(o.isBox||!seenBy(e,o)) continue; const d=Math.hypot(o.x-r.x,o.y-r.y); if(d<bd){ bd=d; t=o; } }
+      const aa=t?Math.atan2(t.y-r.y,t.x-r.x):Math.atan2(ty-r.y,tx-r.x);
+      const sp={...runeFx(R,.4),k:'A',name:'Rune Bolt',color:R.col,speed:950,range:780,pr:9,dmg:R.dmg*.4,healSelf:R.heal?R.heal*.15:0};
+      for(let j=0;j<(s.double?2:1);j++){
+        const ab=aa+(s.double?(j?.07:-.07):0);
+        projectiles.push({x:r.x,y:r.y,vx:Math.cos(ab)*sp.speed,vy:Math.sin(ab)*sp.speed,r:sp.pr,owner:e,dist:0,s:sp,hitSet:new Set(),style:'rune'});
+      }
+      fxFlash(r.x,r.y,36,R.col,.2);
+    }
+  },
+  runeport(e,s){
+    const own=ownerRunes(e);
+    if(own.length<3){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'needs 3 runes',t0:now,last:now,col:s.color}); return false; }
+    e.tele={at:now+s.chan}; e.stunUntil=Math.max(e.stunUntil,now+s.chan); e.path=[]; e.moveVec=null;
+    fxRing(e.x,e.y,60,s.color,s.chan);
+  },
+  runethrow(e,s,a){
+    const n=s.count||1;
+    for(let j=0;j<n;j++){
+      const t=ri(0,RUNES.length-1), R=RUNES[t], aa=a+(n>1?(j/(n-1)-.5)*.35:0);
+      const sp={...runeFx(R,.8),k:'D',name:'Rune Throw',speed:820,range:640,pr:12,dmg:R.dmg*.85,explode:R.r*.8,rune:t,healSelf:R.heal?R.heal*.5:0,color:R.col};
+      projectiles.push({x:e.x+Math.cos(aa)*e.r,y:e.y+Math.sin(aa)*e.r,vx:Math.cos(aa)*sp.speed,vy:Math.sin(aa)*sp.speed,r:sp.pr,owner:e,dist:0,s:sp,hitSet:new Set(),style:'rune'});
+    }
+    fxFlash(e.x+Math.cos(a)*e.r*1.6,e.y+Math.sin(a)*e.r*1.6,22,s.color,.14);
+  },
+  runeseal(e,s){
+    const own=ownerRunes(e).sort((a,b)=>b.born-a.born).slice(0,3);
+    if(own.length<3){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'needs 3 runes',t0:now,last:now,col:s.color}); return false; }
+    const q={id:sealSeq++,pts:own.map(r=>[r.x,r.y]),types:own.map(r=>r.type),owner:e,start:now,until:now+s.dur,next:now+.5};
+    seals.push(q);
+    for(const t of foes(e)) if(inTri(q.pts,t.x,t.y)){ t.sealId=q.id; t.sealUntil=q.until; t.path=[]; }
+    for(const r of own) r.until=Math.max(r.until,q.until+.5);
+    const cx=(q.pts[0][0]+q.pts[1][0]+q.pts[2][0])/3, cy=(q.pts[0][1]+q.pts[1][1]+q.pts[2][1])/3;
+    fxRing(cx,cy,160,'#f1e2a4',.6); fxFlash(cx,cy,120,'#ffffff',.3); addShake(cx,cy,12);
+    for(const r of own){ fxTrail(r.x,r.y,cx,cy,RUNES[r.type].col); burst(r.x,r.y,RUNES[r.type].col,18,240,.6,4); }
+    floaters.push({x:e.x,y:e.y-40,v:0,txt:'RUNE SEAL',t0:now,last:now,col:s.color});
+  },
 };
 
 const ASC_BASIC={name:'Holy Bolt',cd:.45,kind:'proj',speed:950,range:640,pr:8,dmg:34,color:'#fff2a0',aiRange:560};
@@ -898,7 +1191,8 @@ function basicOf(e){ if(e.cls==='wildshaper'&&e.form) return WILD_BASIC[e.form];
 const slotOn=i=>spellCount>=8||i<4||i===7;
 function castSpell(e,i,tx,ty){
   if(!slotOn(i)||e.dead||now<e.stunUntil||now<e.fearUntil||e.dash||now<e.cd[i]) return false;
-  const s=spellOf(e,i);
+  let s=spellOf(e,i), fort=false, fwas=false;
+  if(now<e.fortuneUntil&&s.kind!=='fortune'){ fort=true; fwas=!!s.upgraded; if(!fwas){ const u=UPG[e.cls]&&UPG[e.cls][i]; if(u) s={...CLASSES[e.cls].spells[i],...u[0],name:CLASSES[e.cls].spells[i].name+'+',desc:'FORTUNE: '+u[1],upgraded:true}; } }
   if(e.medOn&&s.kind!=='channel') return false;
   if(s.cost&&e.hp<=s.cost+30) return false;
   if(s.off&&now<e.offCd) return false;
@@ -906,10 +1200,11 @@ function castSpell(e,i,tx,ty){
   if(!s.stealth&&s.kind!=='empower') e.stealthUntil=0;
   if(e.recastUntil&&i===7) e.recastUntil=0;
   const a=Math.atan2(ty-e.y,tx-e.x);
-  e.face=a; e.faceLock=now+.35; e.cd[i]=noCd&&e.isPlayer?now+.15:now+s.cd*(1-Math.min(.6,e.bCdr||0));
+  e.face=a; e.faceLock=now+.35; e.cd[i]=noCd&&e.isPlayer?now+.15:now+s.cd*(1-Math.min(.6,e.bCdr||0))*(now<e.manUntil?.5:1);
   fxRing(e.x,e.y,34,s.color,.25);
   e.anim={t0:now,dur:s.kind==='cone'?.22:.18,a,amp:(s.kind==='cone'||s.kind==='dash')?7:-3,sw:null};
   if(K[s.kind](e,s,a,tx,ty)===false){ e.cd[i]=oldCd; e.stealthUntil=oldSt; return false; }
+  if(fort){ e.fortuneUntil=0; if(fwas) e.cd[i]=now; fxRing(e.x,e.y,64,'#fff2a0',.45); burst(e.x,e.y,'#fff2a0',14,200,.5,3.5); floaters.push({x:e.x,y:e.y-52,v:0,txt:fwas?'FORTUNE: NO COOLDOWN':'FORTUNE: UPGRADED',t0:now,last:now,col:'#fff2a0'}); }
   if(s.cost) e.hp=Math.max(1,e.hp-s.cost);
   if(s.off) e.offCd=now+.5;
   return true;
@@ -1350,8 +1645,11 @@ function boxBlock(e,x,y){
 }
 function tryMove(e,dx,dy){
   if(flies(e)){ e.x=clamp(e.x+dx,T*1.5,MW*T-T*1.5); e.y=clamp(e.y+dy,T*1.5,MH*T-T*1.5); return; }
+  const ox=e.x, oy=e.y;
   if(!circleHit(e.x+dx,e.y,e.r)&&!boxBlock(e,e.x+dx,e.y)) e.x+=dx;
+  if(e.sealUntil>now&&sealBreak(e)) e.x=ox;
   if(!circleHit(e.x,e.y+dy,e.r)&&!boxBlock(e,e.x,e.y+dy)) e.y+=dy;
+  if(e.sealUntil>now&&sealBreak(e)) e.y=oy;
 }
 function speedOf(e){
   const fm=e.form==='wolf'||e.form==='avatar'?((e.formS&&e.formS.spd)||1.3):e.form==='hawk'?1.35:e.form==='bear'?.92:1;
@@ -1392,8 +1690,6 @@ function updateBeasts(dt){
       if(Math.hypot(gx-b.x,gy-b.y)>25&&now>b.repath){ b.path=circleHit(gx,gy,b.r)?[{x:o.x,y:o.y}]:findPath(b.x,b.y,gx,gy); b.repath=now+.3; }
     }
     moveEnt(b,dt);
-    { const dx=b.x-o.x, dy=b.y-o.y, dd=Math.hypot(dx,dy), mn=o.r+b.r+14;
-      if(dd<mn){ const ux=dd>1?dx/dd:Math.cos(o.face), uy=dd>1?dy/dd:Math.sin(o.face), k=Math.min(mn-dd+2,340*dt+6); tryMove(b,ux*k,uy*k); } }
   }
 }
 function updateEnt(e,dt){
@@ -1403,6 +1699,8 @@ function updateEnt(e,dt){
     return;
   }
   if(e.dead){ if(now>=e.respawnAt) respawn(e); return; }
+  if(e.realCls&&now>=e.manUntil) endManifest(e);
+  if(e.tele&&now>=e.tele.at) finishTele(e);
   if((e.form==='hawk'||e.form==='avatar')&&now>=e.formUntil){
     const av=e.form==='avatar', s=e.formS; clearForm(e);
     if(av){ K.nova(e,{r:s.r,dmg:s.dmg,stun:s.stun,color:s.color}); fxFlash(e.x,e.y,s.r*.6,'#ffffff',.25); addShake(e.x,e.y,12); }   // the Avatar's single finishing nova
@@ -1606,7 +1904,7 @@ function update(dt){
   if(spectating&&specAuto&&now>=specNext){ specNext=now+1.5; specPick(); }
   updateDoors(dt);
   for(const e of ents) updateEnt(e,dt);
-  updateBeasts(dt);
+  updateBeasts(dt); updatePortals(); updateRunes(dt);
 
   // projectiles
   for(let i=projectiles.length-1;i>=0;i--){
@@ -1795,6 +2093,105 @@ function drawBox(e){
     ctx.fillStyle='#e8b04a'; ctx.fillRect(x-s,y-s-9,s*2*Math.max(0,e.hp/e.maxHp),5);
   }
 }
+
+/* ---------- Nordic rune art ---------- */
+function runeGlyph(c,type,sz){
+  c.beginPath();
+  if(type===0){ c.moveTo(-sz*.45,-sz); c.lineTo(sz*.5,0); c.lineTo(-sz*.45,sz); }                                   // Kenaz
+  else if(type===1){ c.moveTo(0,-sz); c.lineTo(0,sz); c.moveTo(-sz*.28,-sz*.55); c.lineTo(sz*.28,-sz*.55); }          // Isa
+  else if(type===2){ c.moveTo(-sz*.35,-sz); c.lineTo(-sz*.35,sz); c.moveTo(-sz*.35,-sz*.55); c.lineTo(sz*.5,-sz*.05); c.lineTo(-sz*.35,sz*.45); }   // Thurisaz
+  else { c.moveTo(sz*.4,-sz); c.lineTo(-sz*.4,-sz*.3); c.lineTo(sz*.4,sz*.3); c.lineTo(-sz*.4,sz); }                  // Sowilo
+  c.stroke();
+}
+const DECO=[
+  [[-.3,-1,-.3,1],[-.3,-.4,.5,-1],[-.3,.1,.5,-.5]],
+  [[-.4,1,-.4,-1],[-.4,-1,.4,-.4],[.4,-.4,.4,1]],
+  [[-.3,-1,-.3,1],[-.3,-1,.5,-.4],[-.3,-.3,.5,.3]],
+  [[-.5,-.8,.5,.8],[.5,-.8,-.5,.8]],
+  [[0,1,0,-1],[-.5,-.4,0,-1],[0,-1,.5,-.4]],
+  [[-.5,-1,-.5,1],[-.5,1,.5,-1],[.5,-1,.5,1],[.5,1,-.5,-1]],
+  [[-.4,-1,-.4,1],[.4,-1,.4,1],[-.4,-.3,.4,.3]],
+  [[0,-1,.6,-.3],[.6,-.3,0,.4],[0,.4,-.6,-.3],[-.6,-.3,0,-1],[0,.4,-.5,1],[0,.4,.5,1]],
+];
+function decoGlyph(c,i,sz){ c.beginPath(); for(const sg of DECO[i&7]){ c.moveTo(sg[0]*sz,sg[1]*sz); c.lineTo(sg[2]*sz,sg[3]*sz); } c.stroke(); }
+function drawRuneStone(r,mine){
+  const R=RUNES[r.type], left=r.until-now, fade=Math.min(1,left/1.2), pulse=.5+.5*Math.sin(now*3+r.born);
+  ctx.save(); ctx.translate(r.x,r.y); ctx.lineCap='round'; ctx.lineJoin='round';
+  if(mine){ ctx.strokeStyle=R.col; ctx.globalAlpha=.2*fade; ctx.setLineDash([6,8]); ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,R.r,0,7); ctx.stroke(); ctx.setLineDash([]); }
+  const g=ctx.createRadialGradient(0,0,6,0,0,60); g.addColorStop(0,R.col); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.globalAlpha=(.22+.12*pulse)*fade; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,60,0,7); ctx.fill();
+  ctx.save(); ctx.rotate(now*.25+r.born); ctx.strokeStyle=R.col; ctx.lineWidth=2; ctx.globalAlpha=(.55+.25*pulse)*fade;
+  for(let i=0;i<12;i++){ ctx.save(); ctx.rotate(i/12*6.2832); ctx.translate(0,-47); decoGlyph(ctx,i+r.type*3,6); ctx.restore(); }
+  ctx.restore();
+  ctx.strokeStyle='#d8c9a0'; ctx.lineWidth=1.6; ctx.globalAlpha=.55*fade;
+  for(let k=0;k<2;k++){ ctx.beginPath(); for(let a=0;a<=6.2832+.01;a+=.12){ const rr=37+Math.sin(a*6+k*3.14159+now*.5)*3.2; ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } ctx.stroke(); }
+  ctx.globalAlpha=fade;
+  const pts=[]; for(let i=0;i<8;i++){ const a=i/8*6.2832+.39, rr=24+(((i*7+((r.born*13)|0))%5)-2)*1.8; pts.push([Math.cos(a)*rr,Math.sin(a)*rr]); }
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+  ctx.fillStyle='#2a2e38'; ctx.fill(); ctx.strokeStyle='#0a0a0e'; ctx.lineWidth=3; ctx.stroke();
+  ctx.strokeStyle='#5d6578'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(pts[5][0]*.9,pts[5][1]*.9); ctx.lineTo(pts[6][0]*.9,pts[6][1]*.9); ctx.lineTo(pts[7][0]*.9,pts[7][1]*.9); ctx.lineTo(pts[0][0]*.9,pts[0][1]*.9); ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(-18,-14); ctx.lineTo(-9,-5); ctx.lineTo(-12,3); ctx.moveTo(17,15); ctx.lineTo(10,8); ctx.lineTo(13,0); ctx.stroke();
+  ctx.shadowColor=R.col; ctx.shadowBlur=10+8*pulse; ctx.strokeStyle=R.col; ctx.lineWidth=4; runeGlyph(ctx,r.type,13);
+  ctx.shadowBlur=0; ctx.strokeStyle='#ffffff'; ctx.globalAlpha=.55*fade; ctx.lineWidth=1.4; runeGlyph(ctx,r.type,13);
+  if(mine){ ctx.globalAlpha=.9; ctx.strokeStyle=R.col; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,56,-Math.PI/2,-Math.PI/2+6.2832*clamp(left/Math.max(.1,r.dur),0,1)); ctx.stroke(); }
+  ctx.restore();
+}
+function drawSeal(q){
+  const left=q.until-now, fade=Math.min(1,left/.6)*Math.min(1,(now-q.start)/.3+.15);
+  const P=q.pts, cx=(P[0][0]+P[1][0]+P[2][0])/3, cy=(P[0][1]+P[1][1]+P[2][1])/3, col=q.types.map(t=>RUNES[t].col);
+  ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.globalAlpha=fade; ctx.beginPath(); ctx.moveTo(P[0][0],P[0][1]); ctx.lineTo(P[1][0],P[1][1]); ctx.lineTo(P[2][0],P[2][1]); ctx.closePath();
+  const rr=Math.max(...P.map(p=>Math.hypot(p[0]-cx,p[1]-cy)))+10, g=ctx.createRadialGradient(cx,cy,10,cx,cy,rr);
+  g.addColorStop(0,'rgba(190,230,255,.30)'); g.addColorStop(1,'rgba(90,60,150,.14)'); ctx.fillStyle=g; ctx.fill();
+  for(let i=0;i<3;i++){
+    const A=P[i], B=P[(i+1)%3], lg=ctx.createLinearGradient(A[0],A[1],B[0],B[1]); lg.addColorStop(0,col[i]); lg.addColorStop(1,col[(i+1)%3]);
+    ctx.strokeStyle=lg; ctx.lineWidth=5; ctx.globalAlpha=fade*(.55+.25*Math.sin(now*5+i)); ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.stroke();
+    ctx.globalAlpha=fade*.9; ctx.strokeStyle='#ffffff'; ctx.lineWidth=1.5; ctx.setLineDash([10,12]); ctx.lineDashOffset=-now*60*(i%2?1:-1); ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.stroke(); ctx.setLineDash([]);
+    const len=Math.hypot(B[0]-A[0],B[1]-A[1]), n=Math.floor(len/46), ang=Math.atan2(B[1]-A[1],B[0]-A[0]);
+    ctx.strokeStyle=col[i]; ctx.lineWidth=2; ctx.globalAlpha=fade*.9;
+    for(let k=1;k<n;k++){ const f=k/n; ctx.save(); ctx.translate(A[0]+(B[0]-A[0])*f,A[1]+(B[1]-A[1])*f); ctx.rotate(ang+Math.PI/2); decoGlyph(ctx,i*3+k,7); ctx.restore(); }
+  }
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(now*.4); ctx.strokeStyle='#f1e2a4'; ctx.lineWidth=3; ctx.globalAlpha=fade*.85; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=12;
+  for(let k=0;k<3;k++){ const ox=Math.cos(k*2.0944-1.5708)*9, oy=Math.sin(k*2.0944-1.5708)*9; ctx.beginPath(); ctx.moveTo(ox,oy-26); ctx.lineTo(ox+23,oy+14); ctx.lineTo(ox-23,oy+14); ctx.closePath(); ctx.stroke(); }
+  ctx.restore();
+  ctx.restore();
+}
+function drawPortal(p){
+  const left=p.until-now, fade=Math.min(1,left/.8)*Math.min(1,(now-p.start)/.25+.2);
+  ctx.save(); ctx.lineCap='round';
+  ctx.globalAlpha=fade*.3; ctx.strokeStyle=p.color; ctx.lineWidth=3; ctx.setLineDash([4,14]); ctx.lineDashOffset=-now*40; ctx.beginPath(); ctx.moveTo(p.ax,p.ay); ctx.lineTo(p.bx,p.by); ctx.stroke(); ctx.setLineDash([]);
+  [[p.ax,p.ay,0],[p.bx,p.by,1]].forEach(([x,y,k])=>{
+    if(fogOn&&p.owner!==player&&!visiblePt(x,y,p.r)) return;
+    ctx.save(); ctx.translate(x,y);
+    const g=ctx.createRadialGradient(0,0,0,0,0,p.r*1.5); g.addColorStop(0,'rgba(10,0,30,.95)'); g.addColorStop(.55,'rgba(70,30,140,.55)'); g.addColorStop(1,'rgba(150,100,255,0)');
+    ctx.globalAlpha=fade; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,p.r*1.5,0,7); ctx.fill();
+    ctx.strokeStyle=p.color; ctx.lineWidth=2.5;
+    for(let i=0;i<4;i++){ ctx.beginPath(); for(let t=0;t<=1.001;t+=.05){ const ang=now*(k?-3:3)+i*1.5708+t*3.4, rad=p.r*(1.05-t*.95), px=Math.cos(ang)*rad, py=Math.sin(ang)*rad; if(t===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.stroke(); }
+    ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,p.r*1.1,0,7); ctx.stroke();
+    ctx.lineWidth=2; for(let i=0;i<12;i++){ const a=i/12*6.2832+now*.5; ctx.beginPath(); ctx.moveTo(Math.cos(a)*p.r*1.1,Math.sin(a)*p.r*1.1); ctx.lineTo(Math.cos(a)*p.r*1.28,Math.sin(a)*p.r*1.28); ctx.stroke(); }
+    ctx.rotate(now*(k?-1.2:1.2)); ctx.fillStyle='#ffe27a'; ctx.beginPath(); for(let i=0;i<8;i++){ const a=i/8*6.2832, rr=i%2?5:13; ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr); } ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+  ctx.restore();
+}
+function drawGroundMagic(){
+  for(const q of seals) drawSeal(q);
+  for(const p of portals) if(p.owner) drawPortal(p);
+  for(const r of runes){
+    if(!r.owner) continue;
+    if(fogOn&&r.owner!==player&&!visiblePt(r.x,r.y,40)) continue;
+    drawRuneStone(r,r.owner===player);
+    if(r.owner.tele){ ctx.save(); ctx.strokeStyle=RUNES[r.type].col; ctx.lineWidth=3; ctx.globalAlpha=.4+.3*Math.sin(now*20); ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.owner.x,r.owner.y); ctx.stroke(); ctx.restore(); }
+  }
+}
+function drawEntExtras(e,x,y){
+  if(now<e.fortuneUntil){ ctx.save(); ctx.strokeStyle='#fff2a0'; ctx.lineWidth=2.5; ctx.globalAlpha=.55+.3*Math.sin(now*8); ctx.setLineDash([3,6]); ctx.lineDashOffset=-now*30; ctx.beginPath(); ctx.arc(x,y,e.r+17,0,7); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#fff2a0'; for(let i=0;i<4;i++){ const a=now*2+i*1.5708; ctx.beginPath(); ctx.arc(x+Math.cos(a)*(e.r+17),y+Math.sin(a)*(e.r+17),3.2,0,7); ctx.fill(); } ctx.restore(); }
+  if(now<e.dodgeUntil&&e.dodgeLeft>0){ ctx.save(); ctx.strokeStyle='#7aff9a'; ctx.lineWidth=2; ctx.globalAlpha=.7; ctx.setLineDash([2,5]); ctx.lineDashOffset=now*25; ctx.beginPath(); ctx.arc(x,y,e.r+13,0,7); ctx.stroke(); ctx.restore(); }
+  if(e.realCls){ ctx.save(); ctx.strokeStyle='#ff7aff'; ctx.lineWidth=3; ctx.globalAlpha=.5+.3*Math.sin(now*9); ctx.beginPath(); ctx.arc(x,y,e.r+20,0,7); ctx.stroke(); ctx.font='bold 18px Consolas,monospace'; ctx.textAlign='center'; ctx.fillStyle='#ff7aff'; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText('?',x,y-e.r-24); ctx.fillText('?',x,y-e.r-24); ctx.restore(); }
+  if(e.cls==='runekeeper'&&!e.dead){ const R=RUNES[e.runeSel|0], gx=x+e.r+18, gy=y-e.r-8; ctx.save(); ctx.translate(gx,gy); ctx.fillStyle='rgba(15,18,26,.85)'; ctx.strokeStyle=R.col; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(9,0); ctx.lineTo(0,11); ctx.lineTo(-9,0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.lineCap='round'; ctx.lineWidth=2.2; runeGlyph(ctx,e.runeSel|0,6); ctx.restore(); }
+  if(e.tele){ const q=clamp((e.tele.at-now)/1,0,1); ctx.save(); ctx.strokeStyle='#c79bff'; ctx.lineWidth=3; ctx.globalAlpha=.8; ctx.beginPath(); ctx.arc(x,y,e.r+10+40*q,0,7); ctx.stroke(); ctx.restore(); }
+  if(e.sealUntil>now){ ctx.save(); ctx.strokeStyle='#f1e2a4'; ctx.lineWidth=3; ctx.globalAlpha=.7; ctx.setLineDash([7,5]); ctx.lineDashOffset=-now*30; ctx.beginPath(); ctx.arc(x,y,e.r+9,0,7); ctx.stroke(); ctx.restore(); }
+}
 function drawBeast(b){
   const x=b.x,y=b.y,r=b.r; let lx=0;
   if(b.anim&&now-b.anim<.18){ lx=Math.sin(Math.PI*(now-b.anim)/.18)*10; }
@@ -1844,6 +2241,7 @@ function drawEnt(e){
   if(now<e.thornUntil){ ctx.strokeStyle='#7acf4a'; ctx.lineWidth=2; for(let i=0;i<10;i++){ const a=i*.628+now; ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*(e.r+4),y+Math.sin(a)*(e.r+4)); ctx.lineTo(x+Math.cos(a)*(e.r+11),y+Math.sin(a)*(e.r+11)); ctx.stroke(); } }
   if(e.form==='avatar'){ ctx.strokeStyle='#6aff6a'; ctx.lineWidth=3; ctx.globalAlpha=.5+.4*Math.sin(now*9); ctx.beginPath(); ctx.arc(x,y,e.r+19,0,7); ctx.stroke(); ctx.globalAlpha=1; }
   if(now<e.fearUntil){ ctx.font='bold 22px Consolas,monospace'; ctx.textAlign='center'; ctx.fillStyle='#c25bff'; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText('!',x,y-e.r-22); ctx.fillText('!',x,y-e.r-22); }
+  drawEntExtras(e,x,y);
   ctx.lineWidth=2;
   if(e.isPlayer){ ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(x,y,e.r+4,0,7); ctx.stroke(); }
   if(spectating&&e===player){ ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.setLineDash([4,4]); ctx.lineDashOffset=-now*20; ctx.beginPath(); ctx.arc(x,y,e.r+5,0,7); ctx.stroke(); ctx.setLineDash([]); }
@@ -1891,6 +2289,7 @@ function renderWorld(){
     }
     if(z.owner!==player){ ctx.strokeStyle='rgba(255,60,60,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(z.x,z.y,z.r+4,0,7); ctx.stroke(); }
   }
+  drawGroundMagic();
   // click marker
   for(const c of clickMarks){ const p=(now-c.t0)/.5; ctx.strokeStyle=`rgba(80,255,120,${1-p})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(c.x,c.y,6+14*(1-p),0,7); ctx.stroke(); }
 
@@ -2120,7 +2519,7 @@ function renderHUD(){
     txt('YOU DIED',W/2,H/2-10,'bold 44px Consolas,monospace','#ff5050','center');
     txt('Respawning in '+Math.max(0,Math.ceil(player.respawnAt-now)),W/2,H/2+26,'bold 20px Consolas,monospace','#fff','center');
   } else if(now<player.stunUntil){
-    txt('STUNNED',W/2,H/2-60,'bold 24px Consolas,monospace','#ffe44a','center');
+    txt(player.tele?'CHANNELING...':'STUNNED',W/2,H/2-60,'bold 24px Consolas,monospace','#ffe44a','center');
   }
 }
 /* ---------- full scoreboard (hold Tab): everyone's score, item, blessings and upgrades; hover a chip for details ---------- */
@@ -2360,7 +2759,7 @@ function startGame(){
   killLimit=training?Infinity:clamp(+document.getElementById('klim').value|0||20,3,100);
   genMap(); buildLayers(); genStations();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
-  ents=[]; boxes=[]; wards=[]; beasts=[];
+  ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[];
   const n=nBots+1;
   const names=[...BOT_NAMES].sort(()=>Math.random()-.5);
   if(spectating){
@@ -2420,7 +2819,7 @@ requestAnimationFrame(frame);
    ONLINE LAYER  (host runs the simulation, clients render snapshots)
    ============================================================ */
 (function(){
-const EX=new Set(['ai','target','lastBy','lastTarget','burnBy','fearSrc','path','moveVec','pend','formS','fl','px','py','id','x','y','name','cls']);
+const EX=new Set(['ai','target','lastBy','lastTarget','burnBy','fearSrc','path','moveVec','pend','formS','fl','px','py','id','x','y','name','cls','dodgeBy','foolCd','foolUpg']);
 Object.assign(net,{role:null,ws:null,id:0,name:'Player',players:new Map(),emap:new Map(),acc:0,sendAcc:0,nextId:1,snapNow:0,snapT:0,lock:0,started:false});
 const TPL={};
 const tpl=cls=>TPL[cls]||(TPL[cls]=makeEnt('',cls,'',false));
@@ -2539,6 +2938,9 @@ function broadcastSnap(){
     mn:mines.map(m=>[m.x,m.y,m.owner.id,m.s.color,m.s.trig,m.arm,m.until]),
     bs:beasts.map(b=>({x:b.x,y:b.y,r:b.r,hp:b.hp,maxHp:b.maxHp,face:b.face,color:b.color,o:b.owner.id,flash:b.flash,anim:b.anim||0})),
     wd:wards.map(w=>[w.x,w.y,w.r,w.until,w.color,w.owner.id]),
+    rn:runes.map(q=>[q.x,q.y,q.type,q.owner.id,q.born,q.until,q.dur]),
+    pt:portals.map(q=>[q.ax,q.ay,q.bx,q.by,q.r,q.owner.id,q.start,q.until,q.color]),
+    sl:seals.map(q=>[q.id,q.pts,q.types,q.owner.id,q.start,q.until]),
     pk:pickups.map(p=>[p.x,p.y,p.type,p.alive?1:0]),
     st:stations.map(q=>({kind:q.kind,x:q.x,y:q.y,alive:q.alive?1:0,item:q.item,opts:q.opts})),
     dr:doors.map(d=>[d.pos,d.open?1:0]),
@@ -2555,7 +2957,7 @@ function clientStart(m){
   net.id=m.id; spellCount=m.sc; fogOn=!!m.fog; killLimit=m.kl; spectating=false; training=false; noCd=false;
   genMap(); buildLayers();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
-  ents=[]; boxes=[]; wards=[]; beasts=[]; stations=[]; pickups=[]; blessing=null; pendingBless=null; updateBlessUI();
+  ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[]; stations=[]; pickups=[]; blessing=null; pendingBless=null; updateBlessUI();
   thirdEyeUntil=0; arenaDuel={active:false,t0:0}; net.emap.clear(); net.started=true; net.got=false; player=null;
   $('over').classList.add('hidden'); setStatus('Match starting...');
 }
@@ -2586,6 +2988,9 @@ function applySnap(S){
   mines=S.mn.map(a=>({x:a[0],y:a[1],owner:E(a[2]),s:{color:a[3],trig:a[4]},arm:a[5],until:a[6]}));
   beasts=S.bs.map(b=>({x:b.x,y:b.y,r:b.r,hp:b.hp,maxHp:b.maxHp,face:b.face,color:b.color,owner:E(b.o),flash:b.flash,anim:b.anim}));
   wards=S.wd.map(a=>({x:a[0],y:a[1],r:a[2],until:a[3],color:a[4],owner:E(a[5])}));
+  runes=(S.rn||[]).map(a=>({x:a[0],y:a[1],type:a[2],owner:E(a[3]),born:a[4],until:a[5],dur:a[6]}));
+  portals=(S.pt||[]).map(a=>({ax:a[0],ay:a[1],bx:a[2],by:a[3],r:a[4],owner:E(a[5]),start:a[6],until:a[7],color:a[8]}));
+  seals=(S.sl||[]).map(a=>({id:a[0],pts:a[1],types:a[2],owner:E(a[3]),start:a[4],until:a[5]}));
   pickups=S.pk.map(a=>({x:a[0],y:a[1],type:a[2],alive:!!a[3]}));
   stations=S.st.map(q=>({kind:q.kind,x:q.x,y:q.y,alive:!!q.alive,item:q.item||0,opts:q.opts}));
   S.dr.forEach((a,i)=>{ const d=doors[i]; if(!d) return; d.pos=a[0]; d.open=!!a[1]; const v=d.pos<.5?3:4; for(let tx=d.x;tx<d.x+d.w;tx++) for(let ty=d.y;ty<d.y+d.h;ty++) grid[ty*MW+tx]=v; });
