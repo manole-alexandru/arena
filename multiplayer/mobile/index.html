@@ -2568,9 +2568,9 @@ function applySnap(S){
     const base=makeEnt(d.name,d.cls,'',false);
     if(e){ const px=e.x,py=e.y,tg=e.target,wd=e.dead,hp0=e.hp; Object.assign(e,base); e.x=px; e.y=py; e.target=tg; e._wd=wd; e._hp=hp0; }
     else { e=base; e._wd=!!d.dead; e._hp=(d.hp!==undefined?d.hp:base.hp); net.emap.set(d.id,e); }
-    Object.assign(e,d); e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id);
+    const _kx=e.x,_ky=e.y; Object.assign(e,d); if(!first){ e.x=_kx; e.y=_ky; } e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id);
     if(first||Math.hypot(e.x-d.x,e.y-d.y)>350||(e._wd&&!e.dead)){ e.x=d.x; e.y=d.y; }
-    e._tx=d.x; e._ty=d.y;
+    e._tx=d.x; e._ty=d.y; (e._buf||(e._buf=[])).push({t:performance.now(),x:d.x,y:d.y,j:(e._buf&&e._buf.length&&Math.hypot(d.x-e._buf[e._buf.length-1].x,d.y-e._buf[e._buf.length-1].y)>350)}); if(e._buf.length>8) e._buf.shift();
     if(!first){
       if(!e._wd&&e.dead){ bloodKill(e); spawnDeath(e,null); }
       else if(!e.dead&&e.hp<e._hp-.5) bloodHit(e,e._hp-e.hp);
@@ -2609,12 +2609,23 @@ function clientFrame(dt){
     const jx=(keys.arrowright?1:0)-(keys.arrowleft?1:0), jy=(keys.arrowdown?1:0)-(keys.arrowup?1:0);
     if(typeof joy!=='undefined'&&joy.on&&(joy.vx||joy.vy)) pmv={x:joy.vx,y:joy.vy}; else if(jx||jy) pmv={x:jx,y:jy};
   }
+  const rt=performance.now()-110;   // everyone else is drawn ~110ms in the past, interpolated between two snapshots
   for(const e of ents){ if(e._tx===undefined) continue;
-    if(e===player&&pmv){   // client-side prediction: move our own hero at once, ease toward the server position
-      const l=Math.hypot(pmv.x,pmv.y), st=speedOf(e)*dt; tryMove(e,pmv.x/l*st,pmv.y/l*st);
-      const err=Math.hypot(e._tx-e.x,e._ty-e.y), kk=err>140?Math.min(1,dt*10):Math.min(1,dt*2.5);
-      e.x+=(e._tx-e.x)*kk; e.y+=(e._ty-e.y)*kk; continue; }
-    const tx=e._tx+(e.vx||0)*age*.6, ty=e._ty+(e.vy||0)*age*.6; e.x+=(tx-e.x)*k; e.y+=(ty-e.y)*k; }
+    if(e===player&&pmv){   // client-side prediction: our own hero moves at once; the (older) server position only corrects big drifts
+      const l=Math.hypot(pmv.x,pmv.y), ux=pmv.x/l, uy=pmv.y/l, st=speedOf(e)*dt; tryMove(e,ux*st,uy*st);
+      const ex=e._tx-e.x, ey=e._ty-e.y, al=ex*ux+ey*uy, L=speedOf(e)*.45;
+      let ca=0; if(al<-L) ca=al+L; else if(al>40) ca=al-40;
+      const px=ex-al*ux, py=ey-al*uy, far=Math.hypot(ex,ey)>260, kp=far?Math.min(1,dt*8):Math.min(1,dt*4), kc=far?Math.min(1,dt*8):Math.min(1,dt*6);
+      e.x+=ux*ca*kc+px*kp; e.y+=uy*ca*kc+py*kp; continue; }
+    const B=e._buf; let tx=e._tx, ty=e._ty;
+    if(B&&B.length){
+      let i=B.length-1; while(i>0&&B[i-1].t>rt) i--;   // B[i-1] <= rt < B[i] (or only newer/older exist)
+      const n=B[i], o=i>0?B[i-1]:null;
+      if(o&&rt>=o.t&&rt<=n.t&&!n.j){ const f=(rt-o.t)/Math.max(1,n.t-o.t); tx=o.x+(n.x-o.x)*f; ty=o.y+(n.y-o.y)*f; }
+      else if(rt>n.t){ const ex=Math.min(.12,(rt-n.t)/1000); tx=n.x+(e.vx||0)*ex; ty=n.y+(e.vy||0)*ex; }
+      else { tx=n.x; ty=n.y; }
+    }
+    if(Math.hypot(tx-e.x,ty-e.y)>350){ e.x=tx; e.y=ty; } else { const kk=Math.min(1,dt*22); e.x+=(tx-e.x)*kk; e.y+=(ty-e.y)*kk; } }
   for(const p of projectiles){ p.x+=p.vx*dt; p.y+=p.vy*dt; projTrail(p); }
   effects=effects.filter(f=>now-f.t0<f.dur);
   dyings=dyings.filter(d=>now-d.t0<d.dur);
