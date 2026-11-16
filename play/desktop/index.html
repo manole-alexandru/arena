@@ -58,7 +58,7 @@
       <label>Spells <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5" selected>Simple 5 (Q W E R + F ultimate)</option></select></label>
       <label>Mode <select id="mode"><option value="dm">Deathmatch</option><option value="dmfree">Deathmatch - you have no cooldowns</option><option value="spec">Spectate (watch bots fight)</option><option value="train">Training (destroy boxes)</option></select></label>
       <label class="dm">Bots <input type="range" id="bots" min="1" max="15" value="5"><b id="botsv">5</b></label>
-      <label class="dm">Bot difficulty <select id="botdiff"><option value="easy" selected>Normal</option><option value="hard">Hard (as before)</option></select></label>
+      <label class="dm">Bot difficulty <select id="botdiff"><option value="easy">Easy (slow, inaccurate)</option><option value="normal" selected>Normal</option><option value="hard">Hard (fast, accurate)</option></select></label>
       <label class="dm">Kills to win <input type="number" id="klim" min="3" max="100" value="20"></label>
       <label><input type="checkbox" id="fog" checked> Fog of war</label>
       <label class="tr" style="display:none"><input type="checkbox" id="nocd"> No cooldowns</label>
@@ -3044,10 +3044,11 @@ buildCards();
 document.getElementById('spells').onchange=buildCards;
 const botsEl=document.getElementById('bots');
 const BOTDIFF={
-  easy:{think:2.6, act:.3,  gcd:2.2, err:.4,  lead:.2, dmg:.7, basic:.45},
+  easy:{think:2.6, act:.3,  gcd:2.2, err:.4,  lead:.2, dmg:1, basic:.45},
+  normal:{think:1.7, act:.55, gcd:1.6, err:.22, lead:.6, dmg:1, basic:1},
   hard:{think:1, act:.85, gcd:1,   err:.09, lead:1,  dmg:1,   basic:1},
 };
-let BD=BOTDIFF.easy;
+let BD=BOTDIFF.normal;
 const diffEl=document.getElementById('botdiff');
 try{ const sv=localStorage.getItem('botDiff'); if(sv&&BOTDIFF[sv]) diffEl.value=sv; }catch(e){}
 diffEl.onchange=()=>{ try{ localStorage.setItem('botDiff',diffEl.value); }catch(e){} };
@@ -3066,7 +3067,7 @@ function startGame(){
   fogOn=!spectating&&document.getElementById('fog').checked;
   blessing=null; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
   noCd=modeEl.value==='dmfree'||(training&&document.getElementById('nocd').checked);
-  BD=BOTDIFF[diffEl.value]||BOTDIFF.easy;
+  BD=BOTDIFF[diffEl.value]||BOTDIFF.normal;
   const nBots=training?0:clamp(+botsEl.value|0,spectating?2:1,15);
   killLimit=training?Infinity:clamp(+document.getElementById('klim').value|0||20,3,100);
   genMap(); buildLayers(); genStations();
