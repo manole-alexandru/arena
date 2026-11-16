@@ -55,9 +55,10 @@
     <div class="sub">Top-down free-for-all deathmatch &mdash; every player is their own team</div>
     <div id="cards"></div>
     <div class="opts">
-      <label>Spells <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5">Simple 5 (Q W E R + F ultimate)</option></select></label>
+      <label>Spells <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5" selected>Simple 5 (Q W E R + F ultimate)</option></select></label>
       <label>Mode <select id="mode"><option value="dm">Deathmatch</option><option value="dmfree">Deathmatch - you have no cooldowns</option><option value="spec">Spectate (watch bots fight)</option><option value="train">Training (destroy boxes)</option></select></label>
       <label class="dm">Bots <input type="range" id="bots" min="1" max="15" value="5"><b id="botsv">5</b></label>
+      <label class="dm">Bot difficulty <select id="botdiff"><option value="easy" selected>Normal</option><option value="hard">Hard (as before)</option></select></label>
       <label class="dm">Kills to win <input type="number" id="klim" min="3" max="100" value="20"></label>
       <label><input type="checkbox" id="fog" checked> Fog of war</label>
       <label class="tr" style="display:none"><input type="checkbox" id="nocd"> No cooldowns</label>
@@ -1174,6 +1175,7 @@ function slow(t,mul,dur){
 }
 function hit(src,t,dmg,fx){
   if(t.dead||now<t.invulnUntil) return;
+  if(src&&src.ai&&!t.isBox&&BD.dmg!==1) dmg*=BD.dmg;
   if(isBlocked(t,src)){ blockFx(t); return; }
   if(fx.k&&src&&src!==t&&dodged(t,src)) return;
   if(fx.color) burst(t.x,t.y,fx.color,6,130,.3,3);
@@ -2131,7 +2133,8 @@ function pickTarget(e){
 }
 function lead(e,t,speed,delay){
   const d=dst(e,t), tm=(speed?d/speed:0)+(delay||0);
-  return {x:t.x+t.vx*tm*.75,y:t.y+t.vy*tm*.75};
+  const k=(e.ai?BD.lead:1)*.75;
+  return {x:t.x+t.vx*tm*k,y:t.y+t.vy*tm*k};
 }
 function pointAway(e,t,dist){
   const base=Math.atan2(e.y-t.y,e.x-t.x);
@@ -2174,7 +2177,7 @@ function botRoam(e,b){
   if(now>b.repath||!e.path.length){ e.path=findPath(e.x,e.y,b.goal.pt.x,b.goal.pt.y); b.repath=now+1.4; if(!e.path.length) b.goalUntil=0; }
 }
 function botThink(e,dt){
-  const b=e.ai; b.t-=dt; if(b.t>0) return; b.t=rnd(.1,.18);
+  const b=e.ai; b.t-=dt; if(b.t>0) return; b.t=rnd(.1,.18)*BD.think;
   if(b.target&&b.target.dead) b.target=null;
   if(!b.target||now>b.retarget){ const nt=pickTarget(e); if(nt) b.target=nt; b.retarget=now+rnd(1.5,3); }
   if(!b.target&&now-e.lastHit<2.5&&e.lastBy&&e.lastBy!==e&&!e.lastBy.dead) b.target=e.lastBy;
@@ -2207,9 +2210,9 @@ function botThink(e,dt){
     if(!circleHit(x,y,e.r)) e.path=[{x,y}];
     b.strafeT=now+rnd(.5,1.2);
   }
-  if(now>=b.gcd&&Math.random()<.85) botCast(e,b,t,d,los,low);
+  if(now>=b.gcd&&Math.random()<.85*BD.act) botCast(e,b,t,d,los,low);
   const bs=basicOf(e), inR=bs.kind==='proj'?(d<=bs.aiRange&&los):(d<=bs.r+t.r);
-  if(inR){ const L=lead(e,t,bs.speed||0,0); basicAttack(e,L.x,L.y); }
+  if(inR&&Math.random()<BD.basic){ const L=lead(e,t,bs.speed||0,0); basicAttack(e,L.x,L.y); }
 }
 function botCast(e,b,t,d,los,low){
   const sp=CLASSES[e.cls].spells, order=[0,1,2,3,4,5,6,7].filter(slotOn).sort(()=>Math.random()-.5);
@@ -2237,8 +2240,8 @@ function botCast(e,b,t,d,los,low){
       case 'stealth': ok=now>=e.stealthUntil&&d<520&&d>170; break;
     }
     if(!ok) continue;
-    if(s.kind==='proj'){ const err=rnd(-.09,.09), dx=tx-e.x, dy=ty-e.y, c=Math.cos(err), sn=Math.sin(err); tx=e.x+dx*c-dy*sn; ty=e.y+dx*sn+dy*c; }
-    if(castSpell(e,i,tx,ty)){ b.gcd=now+rnd(.3,.7); return; }
+    if(s.kind==='proj'){ const err=rnd(-BD.err,BD.err), dx=tx-e.x, dy=ty-e.y, c=Math.cos(err), sn=Math.sin(err); tx=e.x+dx*c-dy*sn; ty=e.y+dx*sn+dy*c; }
+    if(castSpell(e,i,tx,ty)){ b.gcd=now+rnd(.3,.7)*BD.gcd; return; }
   }
 }
 
@@ -3040,6 +3043,14 @@ function buildCards(){
 buildCards();
 document.getElementById('spells').onchange=buildCards;
 const botsEl=document.getElementById('bots');
+const BOTDIFF={
+  easy:{think:2.6, act:.3,  gcd:2.2, err:.4,  lead:.2, dmg:.7, basic:.45},
+  hard:{think:1, act:.85, gcd:1,   err:.09, lead:1,  dmg:1,   basic:1},
+};
+let BD=BOTDIFF.easy;
+const diffEl=document.getElementById('botdiff');
+try{ const sv=localStorage.getItem('botDiff'); if(sv&&BOTDIFF[sv]) diffEl.value=sv; }catch(e){}
+diffEl.onchange=()=>{ try{ localStorage.setItem('botDiff',diffEl.value); }catch(e){} };
 botsEl.oninput=()=>document.getElementById('botsv').textContent=botsEl.value;
 const modeEl=document.getElementById('mode');
 modeEl.onchange=()=>{
@@ -3055,6 +3066,7 @@ function startGame(){
   fogOn=!spectating&&document.getElementById('fog').checked;
   blessing=null; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
   noCd=modeEl.value==='dmfree'||(training&&document.getElementById('nocd').checked);
+  BD=BOTDIFF[diffEl.value]||BOTDIFF.easy;
   const nBots=training?0:clamp(+botsEl.value|0,spectating?2:1,15);
   killLimit=training?Infinity:clamp(+document.getElementById('klim').value|0||20,3,100);
   genMap(); buildLayers(); genStations();
