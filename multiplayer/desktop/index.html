@@ -68,7 +68,7 @@
     <div class="opts">
       <label>Spells <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5">Simple 5 (Q W E R + F ultimate)</option></select></label>
       <label>Mode <select id="mode"><option value="dm">Deathmatch</option><option value="dmfree">Deathmatch - you have no cooldowns</option><option value="spec">Spectate (watch bots fight)</option><option value="train">Training (destroy boxes)</option></select></label>
-      <label class="dm">Bots <input type="range" id="bots" min="1" max="15" value="5"><b id="botsv">5</b></label>
+      <label class="dm" style="display:none"><input type="range" id="bots" min="0" max="0" value="0"><b id="botsv">0</b></label>
       <label class="dm">Kills to win <input type="number" id="klim" min="3" max="100" value="20"></label>
       <label><input type="checkbox" id="fog" checked> Fog of war</label>
       <label class="tr" style="display:none"><input type="checkbox" id="nocd"> No cooldowns</label>
@@ -2294,7 +2294,7 @@ function startGame(){
   fogOn=!spectating&&document.getElementById('fog').checked;
   blessing=null; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
   noCd=modeEl.value==='dmfree'||(training&&document.getElementById('nocd').checked);
-  const nBots=training?0:clamp(+botsEl.value|0,spectating?2:1,15);
+  const nBots=training?0:(training||spectating?clamp(+botsEl.value|0,0,15):0);
   killLimit=training?Infinity:clamp(+document.getElementById('klim').value|0||20,3,100);
   genMap(); buildLayers(); genStations();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
