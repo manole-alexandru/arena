@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Arena Deathmatch</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0d0d0d;color:#cfe;font-family:Consolas,"Courier New",monospace;display:flex;align-items:center;justify-content:center;padding:16px}
+.w{max-width:760px;width:100%}
+h1{margin:0;letter-spacing:8px;color:#6dff8a;font-size:clamp(28px,8vw,48px);text-align:center}
+.sub{text-align:center;color:#7a9a78;margin:4px 0 22px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.box{border:2px solid #3b5a38;background:#10170f;border-radius:8px;padding:16px}
+.box h2{margin:0 0 6px;color:#e8ffe8;font-size:20px}.box p{margin:0 0 12px;color:#8fb08c;font-size:13px;line-height:1.5}
+a.b{display:block;text-align:center;text-decoration:none;color:#fff;background:#2c7a3a;padding:14px;border-radius:5px;margin-top:8px;font-weight:bold;letter-spacing:2px}
+a.b:hover{background:#38a04a}a.b.alt{background:#1b2e1a;border:1px solid #3b5a38;color:#9c9}
+a.b.rec{outline:2px solid #6dff8a}
+.note{text-align:center;color:#7a9a78;font-size:12px;margin-top:16px}
+</style></head><body><div class="w">
+<h1>ARENA</h1><div class="sub">Top-down free-for-all deathmatch &middot; 3 classes &middot; 8 spells each</div>
+<div class="row">
+ <div class="box"><h2>Single player</h2><p>Fight bots, train on boxes or spectate.</p>
+  <a class="b" data-d="desktop" href="play/desktop/">PLAY &mdash; KEYBOARD &amp; MOUSE</a>
+  <a class="b" data-d="mobile" href="play/mobile/">PLAY &mdash; PHONE / TOUCH</a></div>
+ <div class="box"><h2>Multiplayer</h2><p>Play with friends. Needs a game server &mdash; one player runs it (see the guide).</p>
+  <a class="b" data-d="desktop" href="multiplayer/desktop/">PLAY &mdash; KEYBOARD &amp; MOUSE</a>
+  <a class="b" data-d="mobile" href="multiplayer/mobile/">PLAY &mdash; PHONE / TOUCH</a>
+  <a class="b alt" href="multiplayer/">How multiplayer works</a></div>
+</div>
+<div class="note"><b>PC:</b> right-click to move, left-click to attack, Q W E R A S D F spells. &nbsp; <b>Phone:</b> drag to move, tap enemies, tap a spell then tap a target. Landscape recommended.</div>
+</div>
+<script>
+const touch=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
+document.querySelectorAll('a.b[data-d]').forEach(a=>{ if((a.dataset.d==='mobile')===touch) a.classList.add('rec'); });
+</script></body></html>

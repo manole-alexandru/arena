@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Arena Multiplayer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;background:#0d0d0d;color:#cfe;font-family:Consolas,"Courier New",monospace;line-height:1.6;padding:18px}
+.w{max-width:720px;margin:auto}h1{color:#6dff8a;letter-spacing:4px}h2{color:#e8ffe8;margin-top:26px}
+code,pre{background:#0b110a;border:1px solid #284226;border-radius:4px;color:#6dff8a}code{padding:1px 5px}pre{padding:10px;overflow:auto}
+a{color:#6dff8a}.b{display:inline-block;background:#2c7a3a;color:#fff;text-decoration:none;padding:12px 18px;border-radius:5px;margin:4px 6px 4px 0;font-weight:bold}
+.warn{border-left:4px solid #d4a72c;padding-left:10px;color:#ffd24a}
+</style></head><body><div class="w">
+<h1>MULTIPLAYER</h1>
+<p>GitHub Pages can only host files, so the live game relay runs on <b>one player's computer</b>. That player is the <b>host</b>: their browser runs the game, everyone else joins. Players can use PC or phone, mixed.</p>
+<h2>Host (once, on a PC)</h2>
+<ol>
+<li>Install Python 3.8+ and download <a href="../server.py">server.py</a>.</li>
+<li>Run <pre>python server.py</pre> (listens on port 8080).</li>
+<li>Expose it to the internet, e.g. with <a href="https://ngrok.com">ngrok</a> or Cloudflare Tunnel: <pre>ngrok http 8080</pre> and copy the address, e.g. <code>abc123.ngrok-free.app</code>.</li>
+<li>Open a game page below, paste the address in the <b>Server</b> box, press <b>HOST A GAME</b>, then <b>START</b> when everyone is in.</li>
+</ol>
+<h2>Join</h2>
+<p>Open a game page below, paste the same address in <b>Server</b>, pick a hero, press <b>JOIN A GAME</b>. Or use a link like <code>.../multiplayer/mobile/?server=abc123.ngrok-free.app</code>.</p>
+<p><a class="b" href="desktop/">KEYBOARD &amp; MOUSE</a><a class="b" href="mobile/">PHONE / TOUCH</a></p>
+<p class="warn">Friends on the same Wi-Fi can use the host's local address instead (e.g. <code>192.168.1.20:8080</code>) without ngrok, but only from the plain <code>http://</code> page that server.py itself serves, since browsers block insecure connections from https pages.</p>
+<p><a href="../">&larr; Back</a></p>
+</div></body></html>
