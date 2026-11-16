@@ -33,6 +33,11 @@ class Client:
     def send(self, text):
         if not self.alive:
             return
+        try:   # a slow client: skip stale world snapshots instead of queueing them (that is what causes growing lag)
+            if text.startswith('{"t":"snap"') and self.writer.transport.get_write_buffer_size() > 40000:
+                return
+        except Exception:
+            pass
         data = text.encode('utf-8')
         n = len(data)
         if n < 126:

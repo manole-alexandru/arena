@@ -2543,7 +2543,17 @@ function sendInput(){
 function clientFrame(dt){
   const age=Math.min(.25,(performance.now()-net.snapT)/1000); now=net.snapNow+age;
   const k=Math.min(1,dt*14);
-  for(const e of ents){ if(e._tx===undefined) continue; const tx=e._tx+(e.vx||0)*age*.6, ty=e._ty+(e.vy||0)*age*.6; e.x+=(tx-e.x)*k; e.y+=(ty-e.y)*k; }
+  let pmv=null;
+  if(player&&!player.dead&&now>=(player.stunUntil||0)&&now>=(player.rootUntil||0)&&!player.dash){
+    const jx=(keys.arrowright?1:0)-(keys.arrowleft?1:0), jy=(keys.arrowdown?1:0)-(keys.arrowup?1:0);
+    if(typeof joy!=='undefined'&&joy.on&&(joy.vx||joy.vy)) pmv={x:joy.vx,y:joy.vy}; else if(jx||jy) pmv={x:jx,y:jy};
+  }
+  for(const e of ents){ if(e._tx===undefined) continue;
+    if(e===player&&pmv){   // client-side prediction: move our own hero at once, ease toward the server position
+      const l=Math.hypot(pmv.x,pmv.y), st=speedOf(e)*dt; tryMove(e,pmv.x/l*st,pmv.y/l*st);
+      const err=Math.hypot(e._tx-e.x,e._ty-e.y), kk=err>140?Math.min(1,dt*10):Math.min(1,dt*2.5);
+      e.x+=(e._tx-e.x)*kk; e.y+=(e._ty-e.y)*kk; continue; }
+    const tx=e._tx+(e.vx||0)*age*.6, ty=e._ty+(e.vy||0)*age*.6; e.x+=(tx-e.x)*k; e.y+=(ty-e.y)*k; }
   for(const p of projectiles){ p.x+=p.vx*dt; p.y+=p.vy*dt; projTrail(p); }
   effects=effects.filter(f=>now-f.t0<f.dur);
   dyings=dyings.filter(d=>now-d.t0<d.dur);
@@ -2595,7 +2605,7 @@ update=function(dt){
   if(net.role==='client'){ clientFrame(dt); return; }
   if(net.role==='host'){
     applyRemoteInputs(); _update(dt);
-    net.acc+=dt; if(net.acc>=1/15){ net.acc=0; if(wsOK()) broadcastSnap(); }
+    net.acc+=dt; if(net.acc>=1/20){ net.acc=0; if(wsOK()) broadcastSnap(); }
     return;
   }
   _update(dt);
@@ -2640,7 +2650,19 @@ $('hostBtn').onclick=()=>{ connect('host'); };
 $('joinBtn').onclick=()=>{ connect('client'); };
 })();
 </script>
-<style>
+<script>
+(function(){
+  // The browser pauses requestAnimationFrame when a tab is in the background / covered. A Worker timer is not paused,
+  // so it steps the simulation (and snapshots / input sending) whenever the normal frame loop has stalled.
+  try{
+    let lastRun=performance.now(), prev=performance.now();
+    const _u=update; update=function(dt){ lastRun=performance.now(); return _u(dt); };
+    const wk=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},16)'])));
+    wk.onmessage=()=>{ const t=performance.now(); let el=Math.min(.5,(t-prev)/1000); prev=t;
+      if(state==='playing'&&net.role&&t-lastRun>70){ while(el>0.0001){ const d=Math.min(.033,el); el-=d; _u(d); } } };
+  }catch(e){}
+})();
+</script><style>
 .navbtn{display:inline-block;text-decoration:none;cursor:pointer;background:#1b2e1a;color:#9c9;border:1px solid #3b5a38;padding:8px 16px;border-radius:4px;font:bold 14px Consolas,"Courier New",monospace;letter-spacing:1px}
 .navbtn:hover{background:#2a4a28;color:#fff}.navbtn.pri{background:#2c7a3a;color:#fff}
 #menu .backrow{margin-bottom:10px}
