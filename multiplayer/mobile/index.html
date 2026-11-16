@@ -2568,7 +2568,7 @@ function applySnap(S){
     const base=makeEnt(d.name,d.cls,'',false);
     if(e){ const px=e.x,py=e.y,tg=e.target,wd=e.dead,hp0=e.hp; Object.assign(e,base); e.x=px; e.y=py; e.target=tg; e._wd=wd; e._hp=hp0; }
     else { e=base; e._wd=!!d.dead; e._hp=(d.hp!==undefined?d.hp:base.hp); net.emap.set(d.id,e); }
-    const _kx=e.x,_ky=e.y; Object.assign(e,d); if(!first){ e.x=_kx; e.y=_ky; } e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id);
+    const _kx=e.x,_ky=e.y; Object.assign(e,d); if(!first){ e.x=_kx; e.y=_ky; } e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id); if(e.isPlayer&&net.pend&&e.cd){ for(const k in net.pend){ const q=net.pend[k]; if(performance.now()-q.t<800&&(e.cd[k]||0)<=S.now+.01) e.cd[k]=q.until; else delete net.pend[k]; } }
     if(first||Math.hypot(e.x-d.x,e.y-d.y)>350||(e._wd&&!e.dead)){ e.x=d.x; e.y=d.y; }
     e._tx=d.x; e._ty=d.y; (e._buf||(e._buf=[])).push({t:performance.now(),x:d.x,y:d.y,j:(e._buf&&e._buf.length&&Math.hypot(d.x-e._buf[e._buf.length-1].x,d.y-e._buf[e._buf.length-1].y)>350)}); if(e._buf.length>8) e._buf.shift();
     if(!first){
@@ -2684,7 +2684,15 @@ update=function(dt){
 };
 const _cast=castSpell;
 castSpell=function(e,i,x,y){
-  if(net.role==='client'){ if(e===player&&state==='playing') wsSend({t:'cast',i,x:Math.round(x),y:Math.round(y)}); return false; }
+  if(net.role==='client'){
+    if(e===player&&state==='playing'){
+      if(player.dead||(player.cd[i]||0)>now+.05) return false;       // on cooldown: do not even send
+      wsSend({t:'cast',i,x:Math.round(x),y:Math.round(y)});
+      try{ const sp=spellOf(player,i); (net.pend||(net.pend={}))[i]={until:now+(sp.cd||0)*(1-(player.bCdr||0)),t:performance.now()};
+        player.cd[i]=net.pend[i].until; player.face=Math.atan2(y-player.y,x-player.x);
+        burst(player.x,player.y,sp.color||'#fff',10,220,.3,3); clickMarks.push({x,y,t0:now}); }catch(err){}
+    }
+    return false; }
   return _cast(e,i,x,y);
 };
 const _basic=basicAttack;
