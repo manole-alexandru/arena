@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Arena</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{background:#0d0d0d;color:#6dff8a;font-family:Consolas,monospace;text-align:center;padding-top:30vh}</style></head><body>Loading&hellip;
+<script>
+// picks the PC or phone version automatically and keeps ?server=... for multiplayer
+const touch=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
+const base='multiplayer', up=base==='multiplayer'?'../../':'../';
+location.replace(up+base+'/'+(touch?'mobile':'desktop')+'/'+location.search);
+</script></body></html>

@@ -54,6 +54,7 @@
 
 <div id="menu" class="overlay">
   <div class="panel">
+    <div class="backrow"><a class="navbtn" href="../../">&larr; BACK</a></div>
     <h1>ARENA</h1>
     <div class="sub">Top-down free-for-all deathmatch &mdash; every player is their own team</div>
     <div id="cards"></div>
@@ -85,7 +86,7 @@
     <h1 id="overTitle">GAME OVER</h1>
     <div class="sub" id="overSub"></div>
     <table id="overTable"></table>
-    <button id="again">BACK TO MENU</button>
+    <button id="again">BACK TO MENU</button> <a class="navbtn" href="../../" style="margin-left:8px;padding:12px 20px">HOME</a>
   </div>
 </div>
 
@@ -2390,6 +2391,54 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+</script>
+<style>
+.navbtn{display:inline-block;text-decoration:none;cursor:pointer;background:#1b2e1a;color:#9c9;border:1px solid #3b5a38;padding:8px 16px;border-radius:4px;font:bold 14px Consolas,"Courier New",monospace;letter-spacing:1px}
+.navbtn:hover{background:#2a4a28;color:#fff}.navbtn.pri{background:#2c7a3a;color:#fff}
+#menu .backrow{margin-bottom:10px}
+.pp{position:fixed;inset:0;z-index:7;display:none;align-items:center;justify-content:center;background:rgba(5,8,6,.8);font-family:Consolas,"Courier New",monospace;color:#cfe}
+.pp .box{background:#10170f;border:2px solid #3b5a38;border-radius:8px;padding:20px 24px;text-align:center;max-width:90vw}
+.pp h2{margin:0 0 6px;color:#6dff8a;letter-spacing:4px}.pp p{margin:0 0 14px;color:#8fb08c;font-size:13px}
+.pp .navbtn{margin:4px}
+</style>
+<div id="pausePanel" class="pp"><div class="box"><h2>PAUSED</h2><p>Esc also resumes</p>
+ <button class="navbtn pri" id="ppResume">RESUME</button><button class="navbtn" id="ppMenu">MAIN MENU</button><a class="navbtn" href="../../">HOME</a></div></div>
+<div id="leavePanel" class="pp"><div class="box"><h2>LEAVE GAME?</h2><p id="leaveNote">The match keeps running without you.</p>
+ <button class="navbtn pri" id="lvStay">STAY</button><button class="navbtn" id="lvLeave">LEAVE</button></div></div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id), online=typeof net!=='undefined';
+  function toMenu(){ try{ pendingBless=null; updateBlessUI(); }catch(e){} state='menu'; $('menu').classList.remove('hidden'); $('over').classList.add('hidden'); if($('pauseBtn')) $('pauseBtn').style.display='none'; }
+  function leaveOnline(){
+    try{ clearInterval(net.hb); if(net.ws) net.ws.close(); }catch(e){}
+    net.role=null; net.started=false; net.got=false; net.ws=null;
+    toMenu(); $('leavePanel').style.display='none';
+    const st=$('netStatus'); if(st) st.textContent='You left the game. Press HOST or JOIN to play again.';
+    const lb=$('lobby'); if(lb) lb.textContent='';
+    const sb=$('start'); if(sb) sb.style.display='';
+  }
+  function toggleLeave(){
+    if(!online||!net.role||state==='menu'||state==='over') return;
+    const p=$('leavePanel'); const show=p.style.display!=='flex';
+    $('leaveNote').textContent=net.role==='host'?'You are the host: leaving ends the match for everyone.':'The match keeps running without you.';
+    p.style.display=show?'flex':'none';
+  }
+  addEventListener('keydown',ev=>{
+    if(ev.key!=='Escape'||ev.repeat) return;
+    if(online&&net.role){ toggleLeave(); ev.stopImmediatePropagation(); }
+  },true);
+  $('ppResume').onclick=()=>{ state='playing'; };
+  $('ppMenu').onclick=toMenu;
+  $('lvStay').onclick=()=>{ $('leavePanel').style.display='none'; };
+  $('lvLeave').onclick=leaveOnline;
+  if($('pauseBtn')) $('pauseBtn').onclick=()=>{ if(online&&net.role) toggleLeave(); else if(state==='playing'||state==='paused') state=state==='playing'?'paused':'playing'; };
+  setInterval(()=>{
+    $('pausePanel').style.display=(state==='paused'&&!(online&&net.role))?'flex':'none';
+    if(state==='menu'||state==='over') $('leavePanel').style.display='none';
+    if($('pauseBtn')&&online&&net.role&&state==='playing') $('pauseBtn').style.display='block';
+  },100);
+  // "back to menu" after a match in multiplayer should also drop the connection
+})();
 </script>
 </body>
 </html>

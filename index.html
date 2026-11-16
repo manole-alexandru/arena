@@ -19,16 +19,14 @@ a.b.rec{outline:2px solid #6dff8a}
 <h1>ARENA</h1><div class="sub">Top-down free-for-all deathmatch &middot; 3 classes &middot; 8 spells each</div>
 <div class="row">
  <div class="box"><h2>Single player</h2><p>Fight bots, train on boxes or spectate.</p>
-  <a class="b" data-d="desktop" href="play/desktop/">PLAY &mdash; KEYBOARD &amp; MOUSE</a>
-  <a class="b" data-d="mobile" href="play/mobile/">PLAY &mdash; PHONE / TOUCH</a></div>
- <div class="box"><h2>Multiplayer</h2><p>Play with friends. Needs a game server &mdash; one player runs it (see the guide).</p>
-  <a class="b" data-d="desktop" href="multiplayer/desktop/">PLAY &mdash; KEYBOARD &amp; MOUSE</a>
-  <a class="b" data-d="mobile" href="multiplayer/mobile/">PLAY &mdash; PHONE / TOUCH</a>
+  <a class="b rec" href="play/">PLAY</a></div>
+ <div class="box"><h2>Multiplayer</h2><p>Play with friends, players only. Needs a game server &mdash; one player runs it (see the guide).</p>
+  <a class="b rec" href="multiplayer/play/">PLAY</a>
   <a class="b alt" href="multiplayer/">How multiplayer works</a></div>
 </div>
-<div class="note"><b>PC:</b> right-click to move, left-click to attack, Q W E R A S D F spells. &nbsp; <b>Phone:</b> drag to move, tap enemies, tap a spell then tap a target. Landscape recommended.</div>
+<div class="note"><span id="dev"></span> The right version opens automatically.<br><b>PC:</b> right-click to move, left-click to attack, Q W E R A S D F spells. &nbsp; <b>Phone:</b> drag to move, tap enemies, tap a spell then tap a target. Landscape recommended.</div>
 </div>
 <script>
 const touch=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad/i.test(navigator.userAgent);
-document.querySelectorAll('a.b[data-d]').forEach(a=>{ if((a.dataset.d==='mobile')===touch) a.classList.add('rec'); });
+document.getElementById('dev').textContent=touch?'Phone / touch controls detected.':'Keyboard & mouse controls detected.';
 </script></body></html>
