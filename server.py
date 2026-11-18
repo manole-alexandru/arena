@@ -178,6 +178,16 @@ async def handle(reader, writer):
         await writer.drain()
         await ws_session(reader, writer)
         return
+    if path == '/info':
+        loop = asyncio.get_running_loop()
+        ng = await loop.run_in_executor(None, ngrok_url)
+        body = json.dumps({'port': SERVER_PORT, 'ips': lan_ips(), 'ngrok': ng}).encode()
+        writer.write(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: ' + str(len(body)).encode() + b'\r\n\r\n' + body)
+        try:
+            await writer.drain()
+        finally:
+            writer.close()
+        return
     name = PAGES.get(path)
     if name and os.path.exists(os.path.join(HERE, name)):
         with open(os.path.join(HERE, name), 'rb') as f:
@@ -193,12 +203,52 @@ async def handle(reader, writer):
         writer.close()
 
 
+def lan_ips():
+    import socket
+    ips = set()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('10.255.255.255', 1))   # no packet is sent; this just picks the outgoing interface
+        ips.add(s.getsockname()[0]); s.close()
+    except Exception:
+        pass
+    try:
+        for ip in socket.gethostbyname_ex(socket.gethostname())[2]:
+            ips.add(ip)
+    except Exception:
+        pass
+    return sorted(i for i in ips if not i.startswith('127.') and not i.startswith('169.254.'))
+
+
+def ngrok_url():
+    """Public https address of a locally running ngrok (read from ngrok's own local API), or None."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen('http://127.0.0.1:4040/api/tunnels', timeout=0.6) as r:
+            for tn in json.loads(r.read().decode()).get('tunnels', []):
+                if tn.get('public_url', '').startswith('https'):
+                    return tn['public_url']
+    except Exception:
+        pass
+    return None
+
+
+SERVER_PORT = 8080
+
+
 async def main(port):
+    global SERVER_PORT
+    SERVER_PORT = port
     server = await asyncio.start_server(handle, '0.0.0.0', port)
     print('ARENA server running:')
     print('  host (you) open:   http://localhost:%d/' % port)
     print('  single-player:     http://localhost:%d/solo' % port)
-    print('  share with friends: run   ngrok http %d   and send them the https URL' % port)
+    ips = lan_ips()
+    for ip in ips:
+        print('  SAME WI-FI / LAN:  http://%s:%d/   <- friends on your network open this' % (ip, port))
+    if ips:
+        print('  (if they cannot connect, allow Python through the Windows Firewall for Private networks)')
+    print('  over the internet: run   ngrok http %d   and send them the https URL' % port)
     async with server:
         await server.serve_forever()
 
