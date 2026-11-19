@@ -548,14 +548,14 @@ const CLASSES = {
       {k:'F',name:'Ascension',cd:65,kind:'buff',ascend:10,boost:[1.4,10],as:[1.5,10],shield:[300,10],heal:250,color:'#fff2a0',ai:'buff',ult:true,desc:'ULTIMATE (buff). For 10s: heal 250, gain a 300 shield, +40% damage, +50% attack speed, and your attacks become ranged holy bolts.'},
     ]},
   warlock: {
-    name:'Warlock', shape:'horned', c:'#9a4bd6', hp:560, speed:205, pref:380,
+    name:'Warlock', shape:'horned', c:'#9a4bd6', hp:800, speed:205, pref:380,
     basic:{name:'Shadow Bolt',cd:.6,kind:'proj',speed:780,range:520,pr:8,dmg:20,color:'#b36bff',aiRange:460},
     blurb:'Blood magic: every spell costs health, so every spell hits harder. Curses, damage over time, drain and fear.',
     spells:[
       {k:'Q',off:true,name:'Soul Siphon',cd:4,kind:'proj',speed:700,range:560,pr:11,dmg:150,drain:.9,color:'#6aff9a',ai:'attack',aiRange:520,desc:'Free. Dark bolt for 150 damage that heals you for 90% of it.'},
       {k:'W',off:true,name:'Agony',cd:6,cost:30,kind:'proj',speed:800,range:600,pr:9,dmg:35,burn:[40,6],color:'#a6d400',ai:'attack',aiRange:560,desc:'Costs 30 health. Bolt that inflicts 40 damage per second for 6s.'},
       {k:'E',name:'Hex',cd:8,cost:20,kind:'proj',speed:900,range:620,pr:9,dmg:0,curse:7,slow:[.6,1.5],color:'#c25bff',ai:'attack',aiRange:580,desc:'Control (costs 20 health): curse an enemy for 7s so they take 25% more damage from everything.'},
-      {k:'R',name:'Dread',cd:16,cost:45,kind:'nova',r:250,dmg:0,fear:2.5,color:'#7a3bd0',ai:'close',desc:'Control (costs 45 health): enemies nearby flee from you for 2.5s and cannot act.'},
+      {k:'R',name:'Dread',cd:16,kind:'nova',r:250,dmg:0,fear:2.5,color:'#7a3bd0',ai:'close',desc:'Control (free): enemies nearby flee from you for 2.5s and cannot act.'},
       {k:'A',off:true,name:'Cursed Ground',cd:12,cost:35,kind:'zone',range:600,r:140,dur:5,dps:36,curse:true,color:'#7a2fb0',ai:'attack',aiRange:500,desc:'Costs 35 health. Cursed zone for 5s: it hurts and curses everyone inside.'},
       {k:'S',name:'Dark Pact',cd:11,cost:90,kind:'buff',shield:[320,6],color:'#ff4a8a',ai:'defend',desc:'Defensive: sacrifice 90 health for a 320 shield lasting 6s.'},
       {k:'D',off:true,name:'Soul Rend',cd:5,cost:30,kind:'nova',r:190,dmg:90,drain:.7,color:'#6aff9a',ai:'close',desc:'Costs 30 health. Tear at everything around you for 90 and heal for 70% of the damage.'},
