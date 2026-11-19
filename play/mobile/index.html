@@ -478,7 +478,7 @@ const CLASSES = {
       {k:'A',name:'Eagle Eye',cd:13,kind:'ward',range:900,r:340,dur:6,color:'#fff2a0',desc:'Utility: place an eye at the cursor: you see everything inside it for 6s, even through walls and fog.'},
       {k:'S',name:'Rapid Fire',cd:11,kind:'buff',as:[2,4],color:'#ffd27a',ai:'buff',desc:'+100% attack speed for 4s.'},
       {k:'D',off:true,name:'Snare Trap',cd:5,kind:'mine',range:360,trig:70,arm:.6,life:14,dmg:60,stun:1.2,color:'#c9a050',ai:'mine',desc:'Hidden trap that deals 60 and stuns for 1.2s. You can keep 3 out at once.'},
-      {k:'F',off:true,name:'Call of the Wild',cd:55,kind:'summon',hp:450,dur:25,dmg:30,color:'#ffb066',ai:'summon',ult:true,desc:'ULTIMATE. A fast beast attacks whoever you are fighting and soaks up enemy projectiles for 25s (450 health). You can walk through it.'},
+      {k:'F',off:true,name:'Call of the Wild',cd:55,kind:'summon',hp:450,dur:25,dmg:30,color:'#ffb066',ai:'summon',ult:true,desc:'ULTIMATE. A fast beast attacks whoever you are fighting and soaks up enemy projectiles for 25s (450 health). You can walk through it. You also SEE the area around it (through the fog, even through walls) for as long as it lives.'},
     ]},
   paladin: {
     name:'Paladin', shape:'shield', c:'#e8c24a', hp:950, speed:240, pref:110,
@@ -1893,10 +1893,13 @@ function visCalc(e,R,T,st){
 // Team Duel: you see through your living allies' eyes too
 const allyVisMap=new WeakMap(); let allyVis=[];
 // does hero e (or an ally of it) see the point? Used for heroes the local screen does not belong to (remote players on the host)
+const BEAST_VIS=360;   // Call of the Wild: the beast lights up the fog around itself (for its owner and the owner's team)
+const beastSees=(o,x,y,r)=>{ for(const b of beasts) if(b.owner&&(b.owner===o||sameTeam(b.owner,o))&&Math.hypot(x-b.x,y-b.y)<=BEAST_VIS+r) return true; return false; };
 const eyeOn=e=>!!(e&&e.bEye>0);   // Eye of Agamotto: no fog of war for its holder
 function entSees(e,x,y,r=0){
   if(now<thirdEyeUntil||eyeOn(e)) return true;
   for(const w of wards) if((w.owner===e||sameTeam(w.owner,e))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  if(beastSees(e,x,y,r)) return true;
   const eyes=[e]; if(teamMode) for(const o of ents) if(o!==e&&!o.dead&&!o.isBox&&o.team===e.team) eyes.push(o);
   for(const o of eyes){
     const R=new Float32Array(FOG_N), T=new Float32Array(FOG_N).fill(-1); visCalc(o,R,T,{face:o.face});
@@ -1923,6 +1926,7 @@ function lineClearPt(x,y,c,sn,len){ for(let l=8;l<=len;l+=8) if(solidAt(x+c*l,y+
 function visiblePt(x,y,r=0){
   if(now<thirdEyeUntil||eyeOn(player)) return true;
   for(const w of wards) if((w.owner===player||sameTeam(w.owner,player))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  if(beastSees(player,x,y,r)) return true;
   for(const a of allyVis){   // an ally sees it
     const ax=x-a.e.x, ay=y-a.e.y, ad=Math.hypot(ax,ay);
     if(ad<=r+20) return true;
@@ -1960,6 +1964,7 @@ function renderFog(){
     fogX.closePath(); fogX.fill();
   }
   for(const w of wards){ if(w.owner!==player&&!sameTeam(w.owner,player)) continue; fogX.beginPath(); fogX.arc((w.x-cam.x)*SC+W/2,(w.y-cam.y)*SC+H/2,w.r*SC,0,7); fogX.fill(); }
+  for(const b of beasts){ if(!b.owner||(b.owner!==player&&!sameTeam(b.owner,player))) continue; fogX.beginPath(); fogX.arc((b.x-cam.x)*SC+W/2,(b.y-cam.y)*SC+H/2,BEAST_VIS*SC,0,7); fogX.fill(); }
   fogX.filter='none'; fogX.globalCompositeOperation='source-over';
   ctx.drawImage(fogC,0,0);
 }
@@ -2284,10 +2289,16 @@ function genStations(){
 }
 function startDuel(a){
   const cand=ents.filter(o=>o!==a&&!o.dead&&!o.isBox&&!sameTeam(a,o)); if(!cand.length) return false;
-  const b=cand[ri(0,cand.length-1)], sp=arenaCfg.spots;
-  [[a,sp[0][0]*T,sp[0][1]*T],[b,sp[1][0]*T,sp[1][1]*T]].forEach(([e,x,y])=>{
+  const b=cand[ri(0,cand.length-1)];
+  // the two fighters start on OPPOSITE sides of the arena, picked at random: N-S, E-W, NE-SW or NW-SE (either way round)
+  const DIRS=[[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1]], k0=ri(0,7);
+  const acx=(ARENA.x0+ARENA.x1)/2, acy=(ARENA.y0+ARENA.y1)/2;
+  const spot=d=>{ for(let f=.72;f>.1;f-=.06){ const x=acx+d[0]*(ARENA.x1-ARENA.x0)/2*f, y=acy+d[1]*(ARENA.y1-ARENA.y0)/2*f; if(!circleHit(x,y,30)) return {x,y}; } return {x:acx,y:acy}; };
+  const pa=spot(DIRS[k0]), pb=spot(DIRS[(k0+4)%8]), GO=3;   // nobody can move or act for GO seconds (3-2-1 countdown)
+  [[a,pa.x,pa.y,pb],[b,pb.x,pb.y,pa]].forEach(([e,x,y,op])=>{
     burst(e.x,e.y,'#ff4040',20,240,.5,4);
-    e.x=e.px=x; e.y=e.py=y; e.path=[]; e.dash=null; e.invulnUntil=now+1.2; e.stunUntil=0; e.target=null;
+    e.x=e.px=x; e.y=e.py=y; e.path=[]; e.moveVec=null; e.dash=null; e.invulnUntil=now+GO+.3; e.stunUntil=now+GO; e.target=null; e.medOn=false;
+    e.face=Math.atan2(op.y-y,op.x-x);
     if(e.isPlayer){ cam.x=x; cam.y=y; }
     burst(x,y,'#ff4040',20,240,.5,4); fxRing(x,y,70,'#ff4040',.5);
   });
@@ -2299,12 +2310,14 @@ function startDuel(a){
     if(arenaCfg.kick){ o.x=o.px=arenaCfg.kick[0]*T; o.y=o.py=arenaCfg.kick[1]*T; } else o.x=57.5*T;
     o.path=[]; o.dash=null;
   }
-  setGate(true); arenaDuel={active:true,t0:now}; addShake(a.x,a.y,10);
-  announce('\u2694 DUEL! '+(a.isPlayer?'You':a.name)+' vs '+(b.isPlayer?'You':b.name)+' \u2014 last one standing leaves the arena \u2694');
+  setGate(true); arenaDuel={active:true,t0:now,go:now+GO,a,b}; addShake(a.x,a.y,10);
+  announce('\u2694 DUEL! '+(a.isPlayer?'You':a.name)+' vs '+(b.isPlayer?'You':b.name)+' \u2014 get ready, last one standing leaves the arena \u2694');
   return true;
 }
+const duelCD=()=>!!(arenaDuel.active&&arenaDuel.go&&now<arenaDuel.go);   // the 3-2-1 freeze before a duel
 function updateDuel(){
   if(!arenaDuel.active) return;
+  if(duelCD()) for(const e of [arenaDuel.a,arenaDuel.b]) if(e&&!e.dead){ e.stunUntil=Math.max(e.stunUntil,arenaDuel.go); e.invulnUntil=Math.max(e.invulnUntil,arenaDuel.go+.3); e.path=[]; e.moveVec=null; }
   let alive=0, last=null;
   for(const e of ents){ if(e.dead||e.isBox) continue; if(e.x>=ARENA.x0&&e.x<=ARENA.x1&&e.y>=ARENA.y0&&e.y<=ARENA.y1){ alive++; last=e; } }
   if((alive<=1&&now>arenaDuel.t0+1.5)||now>arenaDuel.t0+100){
@@ -2926,7 +2939,7 @@ function drawBox(e){
   ctx.fillStyle='#8d6b3b'; ctx.fillRect(x-s,y-s,s*2,s*2);
   ctx.strokeStyle='#4f3a1c'; ctx.lineWidth=3; ctx.strokeRect(x-s+1.5,y-s+1.5,s*2-3,s*2-3);
   ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x-s+3,y-s+3); ctx.lineTo(x+s-3,y+s-3); ctx.moveTo(x+s-3,y-s+3); ctx.lineTo(x-s+3,y+s-3); ctx.stroke();
-  if(now<e.stunUntil){ ctx.fillStyle='rgba(255,228,74,.35)'; ctx.fillRect(x-s,y-s,s*2,s*2); }
+  if(now<e.stunUntil&&!duelCD()){ ctx.fillStyle='rgba(255,228,74,.35)'; ctx.fillRect(x-s,y-s,s*2,s*2); }
   if(now<e.slowUntil){ ctx.fillStyle='rgba(120,190,255,.3)'; ctx.fillRect(x-s,y-s,s*2,s*2); }
   if(e.hp<e.maxHp){
     ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(x-s-1,y-s-10,s*2+2,7);
@@ -3091,7 +3104,7 @@ function drawEnt(e){
   if(now<e.drUntil){ ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x,y,e.r+10,0,7); ctx.stroke(); }
   if(now<e.slowUntil){ ctx.strokeStyle='rgba(120,190,255,.8)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,e.r+2,0,7); ctx.stroke(); }
   if(now<e.burnUntil){ ctx.fillStyle='#ff8a2b'; for(let i=0;i<3;i++){ const a=now*6+i*2.1; ctx.beginPath(); ctx.arc(x+Math.cos(a)*e.r*.8,y+Math.sin(a)*e.r*.8-4,3,0,7); ctx.fill(); } }
-  if(now<e.stunUntil){ ctx.fillStyle='#ffe44a'; for(let i=0;i<3;i++){ const a=now*5+i*2.09; ctx.beginPath(); ctx.arc(x+Math.cos(a)*14,y-e.r-12+Math.sin(a)*4,3.2,0,7); ctx.fill(); } }
+  if(now<e.stunUntil&&!duelCD()){ ctx.fillStyle='#ffe44a'; for(let i=0;i<3;i++){ const a=now*5+i*2.09; ctx.beginPath(); ctx.arc(x+Math.cos(a)*14,y-e.r-12+Math.sin(a)*4,3.2,0,7); ctx.fill(); } }
   if(e.spin){ ctx.lineCap='round'; for(let i=0;i<3;i++){ const a=now*14+i*2.09; for(let k=0;k<5;k++){ ctx.strokeStyle='rgba(255,255,255,'+(.85*(1-k/5)).toFixed(2)+')'; ctx.lineWidth=5-k*.7; ctx.beginPath(); ctx.arc(x,y,e.spin.s.r*.9,a-k*.2,a-k*.2+.45); ctx.stroke(); } } if(Math.random()<.5) spark(x+Math.cos(now*14)*e.spin.s.r*.9,y+Math.sin(now*14)*e.spin.s.r*.9,rnd(-30,30),rnd(-30,30),'#fff',2.5,.25); }
   // name + hp
   const bw=56, by=y-e.r-14;
@@ -3384,7 +3397,7 @@ function renderHUD(){
     ctx.fillStyle='rgba(120,0,0,.25)'; ctx.fillRect(0,0,W,H);
     txt('YOU DIED',W/2,H/2-10,'bold 44px Consolas,monospace','#ff5050','center');
     txt('Respawning in '+Math.max(0,Math.ceil(player.respawnAt-now)),W/2,H/2+26,'bold 20px Consolas,monospace','#fff','center');
-  } else if(now<player.stunUntil){
+  } else if(now<player.stunUntil&&!duelCD()){
     txt(player.tele?'CHANNELING...':'STUNNED',W/2,H/2-60,'bold 24px Consolas,monospace','#ffe44a','center');
   }
 }
@@ -3487,6 +3500,11 @@ function render(){
   mouseW.x=(mouse.x-W/2)/SC+cam.x; mouseW.y=(mouse.y-H/2)/SC+cam.y;
   if(fogOn&&player) computeVision();
   renderWorld(); if(fogOn&&player) renderFog(); renderHUD();
+  if(duelCD()){   // big 3-2-1 before the duel starts (everyone sees it, also online)
+    const left=arenaDuel.go-now, n=Math.ceil(left), f=n-left;
+    ctx.save(); ctx.globalAlpha=1-f*.5; txt(''+n,W/2,H/2-120+f*10,'bold '+Math.round(150-f*30)+'px Consolas,monospace','#ff5a4a','center'); ctx.restore();
+    txt('DUEL STARTS',W/2,H/2-70,'bold 22px Consolas,monospace','#ffd24a','center');
+  }
   if(state==='paused'){
     ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,W,H);
     txt('PAUSED',W/2,H/2,'bold 48px Consolas,monospace',GREEN,'center');
