@@ -1656,7 +1656,7 @@ const K={
   },
   leap(e,s,a,tx,ty){
     const p=clampTo(e,tx,ty,s.dist);
-    if(fogOn&&e===player&&!spectating&&visiblePt(p.x,p.y,0)){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }
+    if(fogOn&&!spectating&&(e===player?visiblePt(p.x,p.y,0):entSees(e,p.x,p.y))){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }   // also for remote players on the host: it works out THEIR vision
     K.blink(e,s,a,tx,ty);
     addShake(e.x,e.y,10);
   },
@@ -1882,6 +1882,18 @@ function visCalc(e,R,T,st){
 }
 // Team Duel: you see through your living allies' eyes too
 const allyVisMap=new WeakMap(); let allyVis=[];
+// does hero e (or an ally of it) see the point? Used for heroes the local screen does not belong to (remote players on the host)
+function entSees(e,x,y,r=0){
+  if(now<thirdEyeUntil) return true;
+  for(const w of wards) if((w.owner===e||sameTeam(w.owner,e))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  const eyes=[e]; if(teamMode) for(const o of ents) if(o!==e&&!o.dead&&!o.isBox&&o.team===e.team) eyes.push(o);
+  for(const o of eyes){
+    const R=new Float32Array(FOG_N), T=new Float32Array(FOG_N).fill(-1); visCalc(o,R,T,{face:o.face});
+    const dx=x-o.x, dy=y-o.y, d=Math.hypot(dx,dy);
+    if(d<=r+20||d-r<=R[Math.floor((Math.atan2(dy,dx)+Math.PI)/(2*Math.PI)*FOG_N)%FOG_N]+6) return true;
+  }
+  return false;
+}
 function computeAllyVision(){
   allyVis=[];
   if(!teamMode||spectating||!player) return;

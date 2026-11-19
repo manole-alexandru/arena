@@ -12,11 +12,12 @@ browser that runs the simulation) and the other players. It runs no game logic.
   /        online.html   (the online version)
   /solo    index.html    (the original single-player version, untouched)
 """
-import asyncio, base64, hashlib, json, os, struct, sys
+import asyncio, base64, hashlib, io, json, os, struct, sys, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGES = {'/': 'online.html', '/online': 'online.html', '/online.html': 'online.html',
          '/solo': 'index.html', '/index.html': 'index.html'}
+README_TXT = chr(10).join(['ARENA server', '', '1. Install Python 3.8+ (python.org).', '2. Open a terminal in this folder and run:  python server.py', '3. Open http://localhost:8080 (friends on your Wi-Fi use your PC address; the page shows it).', '   For internet play run:  ngrok http 8080', ''])
 GUID = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
 clients = {}        # id -> Client
@@ -183,6 +184,22 @@ async def handle(reader, writer):
         ng = await loop.run_in_executor(None, ngrok_url)
         body = json.dumps({'port': SERVER_PORT, 'ips': lan_ips(), 'ngrok': ng}).encode()
         writer.write(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nContent-Length: ' + str(len(body)).encode() + b'\r\n\r\n' + body)
+        try:
+            await writer.drain()
+        finally:
+            writer.close()
+        return
+    if path == '/arena-server.zip':   # the "download the server" button: server.py + the game files, ready to unzip and run
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+            for fn in ('server.py', 'online.html', 'index.html'):
+                fp = os.path.join(HERE, fn)
+                if os.path.exists(fp): z.write(fp, 'arena-server/' + fn)
+            z.writestr('arena-server/README.txt', README_TXT)
+        body = buf.getvalue()
+        CRLF = b'\r\n'
+        writer.write(b'HTTP/1.1 200 OK' + CRLF + b'Content-Type: application/zip' + CRLF + b'Content-Disposition: attachment; filename="arena-server.zip"' + CRLF
+                     + b'Cache-Control: no-store' + CRLF + b'Content-Length: ' + str(len(body)).encode() + CRLF + CRLF + body)
         try:
             await writer.drain()
         finally:

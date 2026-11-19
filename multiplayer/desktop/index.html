@@ -114,6 +114,8 @@
   table{width:100%;border-collapse:collapse;margin:12px 0}
   td,th{padding:4px 10px;text-align:left;border-bottom:1px solid #223}
   th{color:#7a9a78}
+  #mp .dlbtn{display:inline-block;background:#2c7a3a;color:#fff;text-decoration:none;padding:9px 18px;border-radius:4px;font-weight:bold;letter-spacing:1px;margin:2px 12px 6px 0}
+  #mp .dlbtn:hover{background:#38a04a}
   #net{margin:10px 0 12px;padding:10px 12px;border:2px solid #3b5a38;border-radius:6px;background:#0b110a}
   #net input{background:#0b110a;color:#6dff8a;border:1px solid #3b5a38;padding:5px;font:inherit;width:150px}
   #net button{padding:7px 16px;font-size:14px;letter-spacing:1px;margin-left:6px}
@@ -134,6 +136,12 @@
   #lobby button.slot.empty{border-style:dashed;color:#7a9a78;font-weight:normal}
   #lobby button.slot.empty:hover{border-color:#6dff8a;color:#6dff8a}
   #lobby button.slot.me{border-color:#6dff8a;background:#12200f;color:#6dff8a}
+  #lobby .plist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+  #lobby .prow{display:flex;gap:14px;align-items:center;padding:8px 12px;border:2px solid #284226;border-radius:5px;background:#0b110a;font-size:14px}
+  #lobby .prow b{flex:1;color:#e8ffe8}
+  #lobby .prow.ok{border-color:#3b8a4a}
+  #lobby .rdy{color:#5dff7a;font-weight:bold}
+  #lobby .nrdy{color:#ffd24a}
 </style>
 </head>
 <body>
@@ -148,6 +156,7 @@
       <h2 style="margin:6px 0 10px;font-size:20px;color:#e8ffe8;letter-spacing:2px">MULTIPLAYER &mdash; SET UP THE SERVER</h2>
       <div class="how">
         <p><b>1. One player runs the game server</b> (on their PC, in the game folder). That player is the <b>host</b>:</p>
+        <p><a class="dlbtn" id="dlServer" href="../../arena-server.zip" download>&#11015; DOWNLOAD THE SERVER (ZIP)</a><span style="font-size:12px;color:#7a9a78">server.py + the game files. Needs <a href="https://www.python.org/downloads/" target="_blank" rel="noopener" style="color:#6dff8a">Python 3.8+</a>. Unzip it, open a terminal in that folder and run:</span></p>
         <pre>python server.py</pre>
         <p><b>2a. Same Wi-Fi / local network (LAN):</b> everyone opens this address in their browser:</p>
         <div id="mpLan" class="addr">checking...</div>
@@ -156,14 +165,21 @@
         <pre>ngrok http 8080</pre>
         <p>then share the <b>https://&hellip;ngrok-free.app</b> link it prints:</p>
         <div id="mpNgrok" class="addr">checking...</div>
-        <p><b>3. Everyone</b> opens one of those addresses (not <code>localhost</code>), types a name, then <b>one</b> player presses <b>HOST A GAME</b> and the others press <b>JOIN A GAME</b>.</p>
+        <p><b>3. Everyone</b> opens one of those addresses (not <code>localhost</code>), types a name, then <b>one</b> player presses <b>HOST A GAME</b> (the host first chooses the game mode) and the others press <b>JOIN A GAME</b>. Everyone then picks a champion and loadout and waits in a waiting room until the host starts the game.</p>
       </div>
       <div id="net">
         <b>YOU</b> &nbsp; Name <input id="pname" maxlength="14" value="Player">
         <label>Server <input id="srv" placeholder="your-server.ngrok-free.app" style="width:260px"></label> <button id="hostBtn">HOST A GAME</button><button id="joinBtn">JOIN A GAME</button>
         <div class="st" id="netStatus">Not connected. Host a game or join one.</div>
       </div>
-      <div class="navrow"><button id="mpBack">&laquo; BACK</button><button id="mpNext" style="margin-left:auto" disabled>CONTINUE &raquo;</button></div>
+      <div class="navrow"><button id="mpBack">&laquo; BACK</button><button id="mpNext" style="display:none" disabled>CONTINUE &raquo;</button></div>
+    </div>
+    <div id="wait" style="display:none">
+      <h2 style="margin:6px 0 10px;font-size:20px;color:#e8ffe8;letter-spacing:2px">WAITING ROOM</h2>
+      <div id="waitMode" class="sub" style="margin-bottom:10px"></div>
+      <div id="lobby"></div>
+      <div id="waitStatus" style="margin:14px 0;color:#ffd24a;font-size:14px"></div>
+      <div class="navrow"><button id="waitLeave" style="background:#444">&laquo; LEAVE</button><button id="waitStart" style="margin-left:auto" disabled>START GAME &raquo;</button></div>
     </div>
     <div id="landing">
       <div class="lrow">
@@ -175,7 +191,7 @@
     <div id="wsteps"></div>
     <div id="st1" class="stepbox">
       <h2>1 &middot; CHOOSE A GAME MODE</h2>
-      <div id="net2"><label id="fillWrap" style="display:none;font-size:13px"><input type="checkbox" id="fillBots" style="width:auto"> fill empty team slots with bots</label><div class="st" id="netStatus2"></div><div id="lobby"></div></div>
+      <div id="net2"><label id="fillWrap" style="display:none;font-size:13px"><input type="checkbox" id="fillBots" style="width:auto"> fill empty team slots with bots</label><div class="st" id="netStatus2" style="display:none"></div></div>
       <div id="modeCards"></div>
       <select id="mode" style="display:none"><option value="tutorial">Tutorial</option><option value="duel">Team Duel</option><option value="dm">Deathmatch</option><option value="spec">Spectate</option><option value="train">Training</option></select>
       <div class="opts" id="modeOpts">
@@ -1695,7 +1711,7 @@ const K={
   },
   leap(e,s,a,tx,ty){
     const p=clampTo(e,tx,ty,s.dist);
-    if(fogOn&&e===player&&!spectating&&visiblePt(p.x,p.y,0)){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }
+    if(fogOn&&!spectating&&(e===player?visiblePt(p.x,p.y,0):entSees(e,p.x,p.y))){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }   // also for remote players on the host: it works out THEIR vision
     K.blink(e,s,a,tx,ty);
     addShake(e.x,e.y,10);
   },
@@ -1921,6 +1937,18 @@ function visCalc(e,R,T,st){
 }
 // Team Duel: you see through your living allies' eyes too
 const allyVisMap=new WeakMap(); let allyVis=[];
+// does hero e (or an ally of it) see the point? Used for heroes the local screen does not belong to (remote players on the host)
+function entSees(e,x,y,r=0){
+  if(now<thirdEyeUntil) return true;
+  for(const w of wards) if((w.owner===e||sameTeam(w.owner,e))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  const eyes=[e]; if(teamMode) for(const o of ents) if(o!==e&&!o.dead&&!o.isBox&&o.team===e.team) eyes.push(o);
+  for(const o of eyes){
+    const R=new Float32Array(FOG_N), T=new Float32Array(FOG_N).fill(-1); visCalc(o,R,T,{face:o.face});
+    const dx=x-o.x, dy=y-o.y, d=Math.hypot(dx,dy);
+    if(d<=r+20||d-r<=R[Math.floor((Math.atan2(dy,dx)+Math.PI)/(2*Math.PI)*FOG_N)%FOG_N]+6) return true;
+  }
+  return false;
+}
 function computeAllyVision(){
   allyVis=[];
   if(!teamMode||spectating||!player) return;
@@ -3482,7 +3510,7 @@ function refreshLoadout(){ bindWait=-1; loPick=loadoutFor(selClass).slice(); loS
 const isClient=()=>typeof net!=='undefined'&&net.role==='client';
 function finishLoadout(){
   bindWait=-1; buildCards();
-  if(isClient()){ goStep(2); const st=document.getElementById('netStatus'); if(st) st.textContent='Ready. Waiting for the host to press START...'; }
+  if(typeof net!=='undefined'&&net.role){ netFinishPick(); }   // online: you are ready; wait in the waiting room until the host starts
   else startGame();
 }
 function closeLoadout(){ bindWait=-1; document.getElementById('loadout').classList.add('hidden'); buildCards(); }
@@ -3514,7 +3542,7 @@ function renderLoadout(){
   const toStep1=!n8&&loStep===2; bk.style.display=''; bk.innerHTML='&laquo; BACK';
   document.getElementById('loSteps2').innerHTML=wizardSteps(3);
   if(loStep===1){ nx.textContent='NEXT: KEY BINDINGS »'; nx.disabled=loPick.length!==4; }
-  else { nx.textContent=isClient()?'DONE':'START GAME \u00BB'; nx.disabled=false; }
+  else { nx.textContent=(typeof net!=='undefined'&&net.role)?'READY \u00BB':'START GAME \u00BB'; nx.disabled=false; }
   nx.onclick=()=>{
     if(loStep===1){
       const old=loadoutFor(selClass).slice().sort((x,y)=>x-y).join(), nw=loPick.slice().sort((x,y)=>x-y);
@@ -3645,9 +3673,9 @@ const MODES=[
 let wStep=1;
 function renderModeCards(){
   const box=document.getElementById('modeCards'); box.innerHTML='';
-  if(tutOffline()&&modeEl.value==='tutorial') modeEl.value='dm';
+  if(tutOffline()&&['tutorial','spec','train'].includes(modeEl.value)) modeEl.value='dm';
   for(const m of MODES){
-    if(m.v==='tutorial'&&tutOffline()) continue;
+    if(tutOffline()&&['tutorial','spec','train'].includes(m.v)) continue;   // online games: only Deathmatch and Team Duel
     const el=document.createElement('div'); el.className='mc'+(modeEl.value===m.v?' sel':'');
     el.innerHTML='<h3>'+m.n+'</h3><p>'+m.d+'</p>';
     el.onclick=()=>{ modeEl.value=m.v; modeEl.onchange(); renderModeCards(); updateWizardButtons(); };
@@ -3659,9 +3687,9 @@ function updateWizardButtons(){
   document.getElementById('wBack').style.display='';
   document.getElementById('wNext').textContent=wStep===1?(modeEl.value==='tutorial'?'START TUTORIAL \u00BB':modeEl.value==='spec'&&!isClient()?'START \u00BB':'NEXT: CHAMPION \u00BB'):'NEXT: LOADOUT \u00BB';
 }
-const onlineActive=()=>typeof net!=='undefined'&&!!net.role;
+const onlineActive=()=>typeof net!=='undefined'&&!!(net.role||net.pending);
 function showScreen(name){
-  for(const [id,n] of [['landing','landing'],['mp','mp'],['wiz','wiz']]){ const el=document.getElementById(id); if(el) el.style.display=name===n?'':'none'; }
+  for(const [id,n] of [['landing','landing'],['mp','mp'],['wiz','wiz'],['wait','wait']]){ const el=document.getElementById(id); if(el) el.style.display=name===n?'':'none'; }
   document.getElementById('loadout').classList.add('hidden');
   if(name==='mp'&&typeof mpEnter==='function') mpEnter();
 }
@@ -3765,7 +3793,7 @@ renderModeCards(); goStep(1); showScreen('landing');
    (fog of war, spells, blessings, stations, 1v1 arena) on its own small map.
    ============================================================ */
 const tg=id=>document.getElementById(id);
-function tutOffline(){ return typeof net!=='undefined'&&!!net.role; }   // only hidden while you sit in an online lobby
+function tutOffline(){ return typeof net!=='undefined'&&!!(net.role||net.pending); }   // only hidden while you sit in an online lobby
 const tutTouch=()=>!!document.getElementById('pauseBtn');   // the touch build has no right-click, arrow keys or mouse wheel
 const TUT_BD={think:2.8,act:.25,gcd:2.6,err:.5,lead:.1,dmg:.6,basic:.3};   // the practice bot: slow, inaccurate, hits softly
 const TUT_HALL=()=>({x:49*T,y:24.5*T});
@@ -4213,7 +4241,7 @@ requestAnimationFrame(frame);
    ============================================================ */
 (function(){
 const EX=new Set(['ai','target','lastBy','lastTarget','burnBy','fearSrc','path','moveVec','pend','formS','fl','px','py','id','x','y','name','cls','dodgeBy','foolCd','foolUpg','kbinds']);
-Object.assign(net,{role:null,ws:null,id:0,name:'Player',players:new Map(),emap:new Map(),acc:0,sendAcc:0,nextId:1,snapNow:0,snapT:0,lock:0,started:false,myTeam:0,spec:false,specId:0,lobbyTeams:false,fill:false,last:[],lastDuel:0});
+Object.assign(net,{role:null,pending:null,ready:false,phase:'idle',mode:'dm',ws:null,id:0,name:'Player',players:new Map(),emap:new Map(),acc:0,sendAcc:0,nextId:1,snapNow:0,snapT:0,lock:0,started:false,myTeam:0,spec:false,specId:0,lobbyTeams:false,fill:false,last:[],lastDuel:0});
 const TPL={};
 const tpl=cls=>TPL[cls]||(TPL[cls]=makeEnt('',cls,'',false));
 const $=id=>document.getElementById(id);
@@ -4225,15 +4253,19 @@ const setStatus=t=>{ $('netStatus').textContent=t; $('netStatus2').textContent=t
 
 /* ---------------- lobby ---------------- */
 function lobbyList(){
-  const list=[{id:net.id,name:net.name+' (host)',cls:selClass,team:net.myTeam}];
-  for(const p of net.players.values()) list.push({id:p.id,name:p.name,cls:p.cls,team:p.team});
+  const list=[{id:net.id,name:net.name+' (host)',cls:selClass,team:net.myTeam,rd:net.ready?1:0}];
+  for(const p of net.players.values()) list.push({id:p.id,name:p.name,cls:p.cls,team:p.team,rd:p.ready?1:0});
   return list;
 }
 const esc=x=>String(x).replace(/</g,'&lt;');
-function showLobby(list,duel){
-  net.last=list; net.lastDuel=duel;
+const heroName=p=>p.rd&&CLASSES[p.cls]?CLASSES[p.cls].name:'choosing hero...';
+function showLobby(list,duel,mode){
+  net.last=list; net.lastDuel=duel; if(mode) net.mode=mode;
   const me=list.find(p=>p.id===net.id); if(me) net.myTeam=me.team;
-  if(!duel){ $('lobby').innerHTML='Players: '+list.map(p=>`<span><b>${esc(p.name)}</b> &middot; ${CLASSES[p.cls]?CLASSES[p.cls].name:'?'}</span>`).join(''); return; }
+  if(!duel){
+    $('lobby').innerHTML='<div class="plist">'+list.map(p=>`<div class="prow${p.rd?' ok':''}"><b>${esc(p.name)}</b><span>${heroName(p)}</span>${p.rd?'<span class="rdy">&#10004; READY</span>':'<span class="nrdy">waiting...</span>'}</div>`).join('')+'</div>';
+    updateWait(); return;
+  }
   const by=[[],[],[]]; for(const p of list) by[p.team===1?1:p.team===2?2:0].push(p);
   const cap=[2,2,1], names=['BLUE TEAM','RED TEAM','SPECTATOR'], cols=['#4aa3ff','#ff5a4a','#cfd8dc'];
   let h='<div class="slots">';
@@ -4241,14 +4273,15 @@ function showLobby(list,duel){
     h+=`<div class="team" style="border-color:${cols[tm]}"><div style="color:${cols[tm]};font-size:12px;font-weight:bold">${names[tm]}</div>`;
     const n=Math.max(cap[tm],by[tm].length);
     for(let k=0;k<n;k++){ const p=by[tm][k];
-      h+=p?`<button class="slot${p.id===net.id?' me':''}" disabled>${esc(p.name)} &middot; ${CLASSES[p.cls]?CLASSES[p.cls].name:'?'}</button>`
+      h+=p?`<button class="slot${p.id===net.id?' me':''}" disabled>${p.rd?'&#10004; ':''}${esc(p.name)} &middot; ${heroName(p)}</button>`
           :`<button class="slot empty" data-team="${tm}">+ empty &mdash; click to join</button>`; }
     h+='</div>';
   }
   $('lobby').innerHTML=h+'</div>';
   $('lobby').querySelectorAll('button.empty').forEach(b=>{ b.onclick=()=>chooseTeam(+b.dataset.team); });
+  updateWait();
 }
-function lobbyBroadcast(){ const l=lobbyList(), duel=modeEl.value==='duel'?1:0; showLobby(l,duel); wsSend({t:'lobby',list:l,duel}); }
+function lobbyBroadcast(){ const l=lobbyList(), duel=modeEl.value==='duel'?1:0; net.mode=modeEl.value; showLobby(l,duel,modeEl.value); wsSend({t:'lobby',list:l,duel,mode:modeEl.value}); }
 function countTeams(exceptId){
   const c=[0,0,0]; if(exceptId!==net.id) c[net.myTeam]++;
   for(const p of net.players.values()) if(p.id!==exceptId) c[p.team]++;
@@ -4263,13 +4296,13 @@ function hostSetTeam(pl,tm){
   lobbyBroadcast();
 }
 function chooseTeam(tm){
-  if(state!=='menu') return;
+  if(state!=='menu'||net.phase!=='wait') return;
   if(net.role==='host') hostSetTeam(null,tm); else if(net.role==='client') wsSend({t:'team',team:tm});
 }
 function applyRoleUI(){
   const cl=net.role==='client';
   $('modeCards').style.display=cl?'none':''; $('modeOpts').style.display=cl?'none':'';
-  $('fillWrap').style.display=net.role==='host'?'':'none';
+  $('fillWrap').style.display=(net.role==='host'||net.pending==='host')?'':'none';
   const h=document.querySelector('#st1 h2'); h.innerHTML=cl?'1 &middot; JOINED &mdash; PICK YOUR TEAM SLOT (above)':'1 &middot; CHOOSE A GAME MODE';
   updateWizardButtons();
 }
@@ -4321,15 +4354,15 @@ function sendStart(pl){ window.sendTo(pl.id,{t:'start',id:pl.ent?pl.ent.id:0,spe
 function hostMsg(m){
   if(m.t==='hello'){ net.id=m.id; return; }
   if(m.t==='hosted'){
-    if(!m.ok){ setStatus('Someone else is already hosting on this server.'); net.role=null; return; }
-    $('mpNext').disabled=false; net.id=m.id; net.myTeam=0; setStatus('HOSTING. Friends on your network open the same-Wi-Fi address the server printed (or your ngrok URL) and press JOIN. In Team Duel everyone picks a slot above; press START (last step) when ready.'); lobbyBroadcast(); return;
+    if(!m.ok){ setStatus('Someone else is already hosting on this server.'); net.role=null; net.phase='idle'; showScreen('mp'); return; }
+    net.id=m.id; net.myTeam=0; net.ready=false; net.phase='pick'; setStatus('HOSTING. Pick your champion and loadout; then wait for everyone in the waiting room.'); lobbyBroadcast(); goStep(2); return;
   }
   if(m.t==='hostgone'||m.t==='nohost') return;
   const id=m.from; if(!id) return;
+  if(m.t==='ping'){ window.sendTo(id,{t:'pong',c:m.c}); return; }
   if(m.t==='join'){
-    const pl={id,name:String(m.name||'Player').slice(0,14),cls:CLASSES[m.cls]?m.cls:'mage',lo:okLo(m.lo),kb:okKb(m.kb),team:autoTeam(),ent:null,inp:null,np:0};
+    const pl={id,name:String(m.name||'Player').slice(0,14),cls:CLASSES[m.cls]?m.cls:'mage',lo:okLo(m.lo),kb:okKb(m.kb),team:autoTeam(),ready:false,ent:null,inp:null,np:0};
     net.players.set(id,pl); lobbyBroadcast();
-    if(state==='playing'||state==='over'){ spawnRemote(pl); sendStart(pl); }
     return;
   }
   if(m.t==='peerleft'){
@@ -4345,7 +4378,10 @@ function hostMsg(m){
   }
   const pl=net.players.get(id); if(!pl) return;
   if(m.t==='team'){ if(state==='menu') hostSetTeam(pl,m.team|0); else lobbyBroadcast(); return; }
-  if(m.t==='cls'){ if(CLASSES[m.cls]&&!pl.ent){ pl.cls=m.cls; pl.lo=okLo(m.lo); pl.kb=okKb(m.kb); lobbyBroadcast(); } return; }
+  if(m.t==='cls'){
+    if(CLASSES[m.cls]&&!pl.ent){ pl.cls=m.cls; pl.lo=okLo(m.lo); pl.kb=okKb(m.kb); if(m.ready) pl.ready=true; lobbyBroadcast();
+      if(m.ready&&(state==='playing'||state==='over')){ spawnRemote(pl); sendStart(pl); }   // joined a match that is already running
+    } return; }
   const e=pl.ent; if(!e) return;
   if(m.t==='in') pl.inp=m;
   else if(m.t==='move'){ if(!e.dead&&!e.medOn) e.path=findPath(e.x,e.y,m.x,m.y); }
@@ -4385,7 +4421,7 @@ function packEnt(e){
 function broadcastSnap(){
   const S={t:'snap',now,
     e:ents.map(packEnt),
-    pr:projectiles.map(p=>[p.x,p.y,p.vx,p.vy,p.r,p.style,p.s.color,p.s.name,p.owner?p.owner.id:0]),
+    pr:projectiles.map(p=>[p.x,p.y,p.vx,p.vy,p.r,p.style,p.s.color,p.s.name,p.owner?p.owner.id:0,p._nid||(p._nid=++net.pid),Math.round(p.dist||0)]),
     zn:zones.map(z=>({ty:z.type,x:z.x,y:z.y,r:z.r,st:z.start,at:z.at,un:z.until,c:z.s.color,n:z.s.name,o:z.owner.id})),
     mn:mines.map(m=>[m.x,m.y,m.owner.id,m.s.color,m.s.trig,m.arm,m.until,m.s.name]),
     bs:beasts.map(b=>({x:b.x,y:b.y,r:b.r,hp:b.hp,maxHp:b.maxHp,face:b.face,color:b.color,o:b.owner.id,flash:b.flash,anim:b.anim||0})),
@@ -4401,6 +4437,7 @@ function broadcastSnap(){
     sc:{bless:sched.bless,pair:sched.pair,kinds:sched.kinds,wb:sched.wb},
     an:[announceText,announceUntil],
     fx:effects, fl:floaters, fd:feed};
+  netFxPack(S);
   wsSend(S);
 }
 
@@ -4412,7 +4449,7 @@ function clientStart(m){
   buildLayers();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
   ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[]; stations=[]; pickups=[]; blessing=null; pendingBless=null; updateBlessUI();
-  thirdEyeUntil=0; arenaDuel={active:false,t0:0}; net.emap.clear(); net.started=true; net.got=false; player=null;
+  thirdEyeUntil=0; arenaDuel={active:false,t0:0}; net.emap.clear(); netReset(); net.started=true; net.got=false; player=null;
   $('over').classList.add('hidden'); setStatus('Match starting...');
 }
 function applySnap(S){
@@ -4424,10 +4461,10 @@ function applySnap(S){
     const base=makeEnt(d.name,d.cls,'',false);
     if(e){ const px=e.x,py=e.y,tg=e.target,wd=e.dead,hp0=e.hp; Object.assign(e,base); e.x=px; e.y=py; e.target=tg; e._wd=wd; e._hp=hp0; }
     else { e=base; e._wd=!!d.dead; e._hp=(d.hp!==undefined?d.hp:base.hp); net.emap.set(d.id,e); }
-    const _kx=e.x,_ky=e.y; Object.assign(e,d); if(!first){ e.x=_kx; e.y=_ky; } e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id); if(e.isPlayer&&net.pend&&e.cd){ for(const k in net.pend){ const q=net.pend[k]; if(performance.now()-q.t<800&&(e.cd[k]||0)<=S.now+.01) e.cd[k]=q.until; else delete net.pend[k]; } }
+    const _kx=e.x,_ky=e.y; Object.assign(e,d); if(!first){ e.x=_kx; e.y=_ky; } if(d.id!==net.id||net.spec){ if(e.anim&&e.anim.t0!==undefined) e.anim=Object.assign({},e.anim,{t0:e.anim.t0+0.11}); if(e.flash) e.flash+=0.11; } e.ai=null; e.id=d.id; e.isPlayer=(d.id===net.id); if(e.isPlayer&&net.pend&&e.cd){ for(const k in net.pend){ const q=net.pend[k]; if(performance.now()-q.t<800&&(e.cd[k]||0)<=S.now+.01) e.cd[k]=q.until; else delete net.pend[k]; } }
     if(first||Math.hypot(e.x-d.x,e.y-d.y)>350||(e._wd&&!e.dead)){ e.x=d.x; e.y=d.y; }
-    e._tx=d.x; e._ty=d.y; (e._buf||(e._buf=[])).push({t:performance.now(),x:d.x,y:d.y,j:(e._buf&&e._buf.length&&Math.hypot(d.x-e._buf[e._buf.length-1].x,d.y-e._buf[e._buf.length-1].y)>350)}); if(e._buf.length>8) e._buf.shift();
-    if(!first){
+    e._tx=d.x; e._ty=d.y; (e._buf||(e._buf=[])).push({t:performance.now(),x:d.x,y:d.y,hp:e.hp,dead:!!e.dead,j:(e._buf&&e._buf.length&&Math.hypot(d.x-e._buf[e._buf.length-1].x,d.y-e._buf[e._buf.length-1].y)>350)}); if(e._buf.length>8) e._buf.shift();
+    if(!first&&d.id===net.id&&!net.spec){
       if(!e._wd&&e.dead){ bloodKill(e); spawnDeath(e,null); }
       else if(!e.dead&&e.hp<e._hp-.5) bloodHit(e,e._hp-e.hp);
     }
@@ -4438,7 +4475,7 @@ function applySnap(S){
   if(net.spec&&!player){ player=list.find(e=>!e.isBox)||null; if(player) net.specId=player.id; }
   const E=id=>net.emap.get(id)||null;
   if(player){ const t=net.lock?net.emap.get(net.lock):null; player.target=(t&&!t.dead)?t:null; if(!player.target) net.lock=0; }
-  projectiles=S.pr.map(a=>({x:a[0],y:a[1],vx:a[2],vy:a[3],r:a[4],style:a[5],s:{color:a[6],name:a[7]},owner:E(a[8]),hitSet:new Set(),dist:0}));
+  netProjSnap(S,E);
   zones=S.zn.map(z=>({type:z.ty,x:z.x,y:z.y,r:z.r,start:z.st,at:z.at,until:z.un,s:{color:z.c,name:z.n},owner:E(z.o)}));
   mines=S.mn.map(a=>({x:a[0],y:a[1],owner:E(a[2]),s:{color:a[3],trig:a[4],name:a[7]},arm:a[5],until:a[6]}));
   beasts=S.bs.map(b=>({x:b.x,y:b.y,r:b.r,hp:b.hp,maxHp:b.maxHp,face:b.face,color:b.color,owner:E(b.o),flash:b.flash,anim:b.anim}));
@@ -4453,31 +4490,53 @@ function applySnap(S){
   blessing=S.bl?{x:S.bl[0],y:S.bl[1],alive:!!S.bl[2]}:null;
   thirdEyeUntil=S.te; Object.assign(sched,S.sc); if(S.ts) teamScore=S.ts;
   announceText=S.an[0]; announceUntil=S.an[1];
-  effects=S.fx; floaters=S.fl; feed=S.fd;
+  netFxSnap(S); feed=S.fd;
   if(net.started&&!net.got&&player){ net.got=true; state='playing'; $('menu').classList.add('hidden'); $('loadout').classList.add('hidden'); cv.style.cursor=net.spec?'default':'none'; camFree=false; cam.x=player.x; cam.y=player.y; }
 }
 function sendInput(){
   const mv={x:(keys.arrowright?1:0)-(keys.arrowleft?1:0),y:(keys.arrowdown?1:0)-(keys.arrowup?1:0)};
   net.lock=(player&&player.target&&!player.target.dead)?player.target.id:0;
-  wsSend({t:'in',mx:Math.round(mouseW.x),my:Math.round(mouseW.y),mv:(mv.x||mv.y)?mv:null,mh:mouseHeld?1:0,ah:atkHeld?1:0,lk:net.lock});
+  const A=atkHeld&&!net.lock?net.aim(mouseW.x,mouseW.y):mouseW;
+  wsSend({t:'in',mx:Math.round(A.x),my:Math.round(A.y),mv:(mv.x||mv.y)?mv:null,mh:mouseHeld?1:0,ah:atkHeld?1:0,lk:net.lock});
 }
 function clientFrame(dt){
-  const age=Math.min(.25,(performance.now()-net.snapT)/1000); now=net.snapNow+age;
+  const age=Math.min(.25,(performance.now()-net.snapT)/1000);
+  { const tg=net.snapNow+age; if(net.clk===undefined||Math.abs(tg-net.clk)>.3) net.clk=tg; else { net.clk+=dt; net.clk+=(tg-net.clk)*Math.min(1,dt*4); } now=net.clk; }
   const k=Math.min(1,dt*14);
   for(const e of ents) dmgBuffFx(e,dt);   // damage-buff embers (the host simulates them, clients draw their own)
-  let pmv=null;
-  if(player&&!player.dead&&now>=(player.stunUntil||0)&&now>=(player.rootUntil||0)&&!player.dash){
+  const pn=performance.now(), rt=pn-0.11*1000, me=(!net.spec&&player&&player.id===net.id)?player:null;
+  let dir=null, lim=1e9;
+  if(me&&!me.dead&&now<(me.rootUntil||0)) net.path=null;
+  if(me&&!me.dead&&now>=(me.stunUntil||0)&&now>=(me.rootUntil||0)&&now>=(me.fearUntil||0)&&!me.dash&&!me.medOn){
     const jx=(keys.arrowright?1:0)-(keys.arrowleft?1:0), jy=(keys.arrowdown?1:0)-(keys.arrowup?1:0);
-    if(typeof joy!=='undefined'&&joy.on&&(joy.vx||joy.vy)) pmv={x:joy.vx,y:joy.vy}; else if(jx||jy) pmv={x:jx,y:jy};
+    if(typeof joy!=='undefined'&&joy.on&&(joy.vx||joy.vy)) dir={x:joy.vx,y:joy.vy}; else if(jx||jy) dir={x:jx,y:jy};
+    if(dir) net.path=null;
+    else {   // click-to-move / hold-to-move: walk the path locally instead of waiting a round trip for the host
+      if(mouseHeld&&pn>=(net.nhp||0)){ net.nhp=pn+100; net.path=findPath(me.x,me.y,mouseW.x,mouseW.y); }
+      let P=net.path;
+      if(P&&P.length){
+        if(flies(me)&&P.length>1) P=net.path=[P[P.length-1]];
+        while(P.length>1&&lineClear(me.x,me.y,P[1].x,P[1].y,me.r)) P.shift();
+        const w=P[0], d=Math.hypot(w.x-me.x,w.y-me.y);
+        if(d<5) P.shift(); else { dir={x:(w.x-me.x)/d,y:(w.y-me.y)/d}; lim=d; }
+      }
+    }
   }
-  const rt=performance.now()-110;   // everyone else is drawn ~110ms in the past, interpolated between two snapshots
   for(const e of ents){ if(e._tx===undefined) continue;
-    if(e===player&&pmv){   // client-side prediction: our own hero moves at once; the (older) server position only corrects big drifts
-      const l=Math.hypot(pmv.x,pmv.y), ux=pmv.x/l, uy=pmv.y/l, st=speedOf(e)*dt; tryMove(e,ux*st,uy*st);
-      const ex=e._tx-e.x, ey=e._ty-e.y, al=ex*ux+ey*uy, L=speedOf(e)*.45;
-      let ca=0; if(al<-L) ca=al+L; else if(al>40) ca=al-40;
-      const px=ex-al*ux, py=ey-al*uy, far=Math.hypot(ex,ey)>260, kp=far?Math.min(1,dt*8):Math.min(1,dt*4), kc=far?Math.min(1,dt*8):Math.min(1,dt*6);
-      e.x+=ux*ca*kc+px*kp; e.y+=uy*ca*kc+py*kp; continue; }
+    if(e===me){
+      if(dir){   // client-side prediction: our own hero moves at once; the (older) server position only corrects big drifts
+        net.mvT=pn;
+        const l=Math.hypot(dir.x,dir.y), ux=dir.x/l, uy=dir.y/l, st=Math.min(speedOf(e)*dt,lim); tryMove(e,ux*st,uy*st);
+        const ex=e._tx-e.x, ey=e._ty-e.y, al=ex*ux+ey*uy, L=speedOf(e)*(.35+Math.min(.3,(net.rtt||100)/1000));
+        let ca=0; if(al<-L) ca=al+L; else if(al>40) ca=al-40;
+        const px=ex-al*ux, py=ey-al*uy, far=Math.hypot(ex,ey)>260, kp=far?Math.min(1,dt*8):Math.min(1,dt*4), kc=far?Math.min(1,dt*8):Math.min(1,dt*6);
+        e.x+=ux*ca*kc+px*kp; e.y+=uy*ca*kc+py*kp;
+      } else {   // standing still / dashing / knocked around: follow the NEWEST server position (not the 110ms-old one: that rubber-banded on every stop)
+        const ex=e._tx-e.x, ey=e._ty-e.y, dd=Math.hypot(ex,ey);
+        if(dd>350){ e.x=e._tx; e.y=e._ty; }
+        else if(e.dash||dd>120||pn-(net.mvT||0)>(net.rtt||100)+120){ const kk=Math.min(1,dt*(e.dash?16:7)); e.x+=ex*kk; e.y+=ey*kk; }
+      }
+      continue; }
     const B=e._buf; let tx=e._tx, ty=e._ty;
     if(B&&B.length){
       let i=B.length-1; while(i>0&&B[i-1].t>rt) i--;   // B[i-1] <= rt < B[i] (or only newer/older exist)
@@ -4485,10 +4544,24 @@ function clientFrame(dt){
       if(o&&rt>=o.t&&rt<=n.t&&!n.j){ const f=(rt-o.t)/Math.max(1,n.t-o.t); tx=o.x+(n.x-o.x)*f; ty=o.y+(n.y-o.y)*f; }
       else if(rt>n.t){ const ex=Math.min(.12,(rt-n.t)/1000); tx=n.x+(e.vx||0)*ex; ty=n.y+(e.vy||0)*ex; }
       else { tx=n.x; ty=n.y; }
+      const cur=rt>=n.t?n:(o||n);   // hp / death on the same delayed timeline as the position: hits land when you SEE them land
+      const h0=e._dh, d0=e._dd; e.hp=cur.hp; e.dead=cur.dead;
+      if(d0!==undefined){
+        if(!d0&&e.dead){ if(!e.isBox){ bloodKill(e); spawnDeath(e,null); } }
+        else if(!e.dead&&h0!==undefined&&e.hp<h0-.5) bloodHit(e,h0-e.hp);
+      }
+      e._dh=e.hp; e._dd=e.dead;
     }
     if(Math.hypot(tx-e.x,ty-e.y)>350){ e.x=tx; e.y=ty; } else { const kk=Math.min(1,dt*22); e.x+=(tx-e.x)*kk; e.y+=(ty-e.y)*kk; } }
-  for(const p of projectiles){ p.x+=p.vx*dt; p.y+=p.vy*dt; projTrail(p); }
-  effects=effects.filter(f=>now-f.t0<f.dur);
+  if(me&&!me.dead){   // aim / facing and attack swings are drawn locally, without waiting for the host
+    if(pn<(net.flT||0)) me.face=net.fa;
+    else if(now>=(me.faceLock||0)&&!me.dash) me.face=(dir&&!me.target)?Math.atan2(dir.y,dir.x):Math.atan2(mouseW.y-me.y,mouseW.x-me.x);
+    const bs=basicOf(me); let swing=atkHeld&&!me.target?{x:mouseW.x,y:mouseW.y}:null;
+    if(me.target&&!me.target.dead){ const t=me.target; if(dst(me,t)<=(bs.kind==='proj'?bs.range:bs.r+t.r)) swing={x:t.x,y:t.y}; }
+    if(swing) net.localSwing(me,swing.x,swing.y);
+    if(net.anim&&pn-net.animT<700) me.anim=net.anim;
+  }
+  netFxFrame(dt);
   dyings=dyings.filter(d=>now-d.t0<d.dur);
   shards=shards.filter(h=>now-h.t0<h.life);
   for(const h of shards){ h.x+=h.vx*dt; h.y+=h.vy*dt; h.vx*=.94; h.vy*=.94; h.rot+=h.vr*dt; }
@@ -4515,13 +4588,16 @@ function clientMsg(m){
   switch(m.t){
     case 'hello': net.id=m.id; if(!m.hostPresent) setStatus('Connected, but nobody is hosting yet. The host must press HOST A GAME first.'); wsSend({t:'join',name:net.name,cls:selClass,lo:loadoutFor(selClass),kb:bindsFor(selClass)}); break;
     case 'nohost': setStatus('Nobody is hosting yet. Ask the host to press HOST A GAME, then press JOIN again.'); break;
-    case 'lobby': $('mpNext').disabled=false; showLobby(m.list,m.duel); if(!net.started) setStatus('Joined. Pick your team slot above, then press NEXT to choose your champion and loadout. The host presses START.'); break;
+    case 'lobby': showLobby(m.list,m.duel,m.mode);
+      if(!net.started&&net.phase!=='pick'&&net.phase!=='wait'){ net.phase='pick'; net.ready=false; setStatus('Joined. Pick your champion and loadout.'); goStep(2); }
+      break;
     case 'start': clientStart(m); break;
     case 'snap': applySnap(m); break;
+    case 'pong': netPong(m); break;
     case 'choice': pendingBless=m.opts.map((o,i)=>({name:o.name,tag:o.tag,col:o.col,desc:o.desc,onPick:()=>wsSend({t:'pick',i})})); choiceHead=m.head; blessHidden=false; updateBlessUI(); break;
     case 'note': noteText=m.txt; noteUntil=now+6; break;
     case 'over': clientOver(m); break;
-    case 'hostgone': setStatus('The host left the game.'); net.started=false; state='menu'; $('menu').classList.remove('hidden'); $('over').classList.add('hidden'); break;
+    case 'hostgone': window.netDisconnect(); state='menu'; $('menu').classList.remove('hidden'); $('over').classList.add('hidden'); showScreen('mp'); setStatus('The host left the game.'); break;
   }
 }
 function clientOver(m){
@@ -4535,12 +4611,115 @@ function clientOver(m){
   setTimeout(()=>$('over').classList.remove('hidden'),900);
 }
 
+
+/* ---------------- client feel: cosmetic replication, projectile timeline, ping, aim compensation ---------------- */
+const ND=0.11;
+Object.assign(net,{loc:0,pid:0,rp:[],rg:[],rs:[],pm:new Map(),pq:[],gq:[],sq:[],fxA:[],flA:[],fxL:[],rtt:null});
+// host: particles from these are made by the client itself, so they are not sent
+for(const nm of ['projTrail','dmgBuffFx','bloodHit','bloodKill','spawnDeath','zoneParts']){
+  const f=window[nm]; if(typeof f!=='function') continue;
+  window[nm]=function(){ const n0=parts.length; net.loc++; try{ return f.apply(this,arguments); } finally{ net.loc--; for(let i=n0;i<parts.length;i++) if(parts[i]) parts[i]._l=1; } };
+}
+{ const _as=addShake; addShake=function(x,y,amt){ if(net.role==='host'&&!net.loc&&state==='playing'&&net.rs.length<30) net.rs.push([Math.round(x),Math.round(y),amt,now]); return _as(x,y,amt); }; }
+{ const _ft=floatText; floatText=function(t,amt){ _ft(t,amt); if(t&&t.fl&&t.id) t.fl.eid=t.id; }; }   // lets each client colour the damage IT takes red
+function netFxPre(){ for(const p of parts) p._s=1; for(const g of ghosts) g._s=1; }
+function netFxPost(){
+  for(const p of parts){ if(p._s) continue; p._s=1; if(!p._l) net.rp.push(p); }
+  for(const g of ghosts){ if(g._s) continue; g._s=1; net.rg.push(g); }
+  if(net.rp.length>400) net.rp.splice(0,net.rp.length-400);
+}
+function netFxPack(S){
+  const R=net.rp, CAP=90, step=R.length>CAP?R.length/CAP:1, pa=[];
+  for(let k=0;k<R.length&&pa.length<CAP;k+=step){ const p=R[Math.floor(k)];
+    const a=[Math.round(p.x),Math.round(p.y),Math.round(p.vx||0),Math.round(p.vy||0),p.t0-now,p.life,p.col,p.sz||3,(p.c?1:0)|(p.add?2:0)|(p.buff?4:0)];
+    if(p.sh) a.push(p.sh,p.rise||0,p.ang||0,p.ln||0); pa.push(a); }
+  if(pa.length) S.pa=pa;
+  if(net.rg.length) S.gh=net.rg.map(g=>{ const o=ents.find(e=>e.dash&&e.cls===g.cls&&e.color===g.color); return [g.cls,g.color,Math.round(g.x),Math.round(g.y),g.face,g.t0-now,o?o.id:0]; });
+  if(net.rs.length) S.sk=net.rs.map(q=>[q[0],q[1],q[2],q[3]-now]);
+  net.rp=[]; net.rg=[]; net.rs=[];
+}
+// client: snapshot -> timeline
+function netReset(){ net.pm=new Map(); net.pq=[]; net.gq=[]; net.sq=[]; net.fxA=[]; net.flA=[]; net.fxL=[]; net.clk=undefined; net.path=null; net.anim=null; net.bcd=0; net.flT=0; }
+function netProjSnap(S,E){
+  const seen=new Set();
+  for(const a of S.pr){ const id=a[9]; seen.add(id); let p=net.pm.get(id);
+    if(!p){ p={hitSet:new Set(),dist:0,born:S.now-(a[10]||0)/Math.max(1,Math.hypot(a[2],a[3]))}; net.pm.set(id,p); }
+    p.sx=a[0]; p.sy=a[1]; p.vx=a[2]; p.vy=a[3]; p.r=a[4]; p.style=a[5]; p.s={color:a[6],name:a[7]}; p.owner=E(a[8]); p.gone=0;
+    if(p.st===undefined){ p.x=a[0]; p.y=a[1]; } p.st=S.now; }
+  for(const [id,p] of net.pm) if(!seen.has(id)&&!p.gone) p.gone=(p.st+S.now)/2;   // it vanished on the host between the last two snapshots
+}
+function netFxSnap(S){
+  const mine=!net.spec, base=S.now+ND;
+  net.fxA=S.fx.map(f=>{ f.t0+=ND; return f; });
+  net.flA=S.fl.map(f=>{
+    if(f.eid!=null&&(f.col==='#fff'||f.col==='#ff6060')) f.col=(mine&&f.eid===net.id)?'#ff6060':'#fff';
+    if(!(mine&&f.eid===net.id)){ f.t0+=ND; if(f.last!==undefined) f.last+=ND; }   // the damage YOU take shows at once, like your hp bar
+    return f; });
+  if(S.pa) for(const a of S.pa){
+    const p={x:a[0],y:a[1],vx:a[2],vy:a[3],t0:base+a[4],life:a[5],col:a[6],sz:a[7],c:!!(a[8]&1),buff:!!(a[8]&4)};
+    if(a[8]&2) p.add=1;
+    if(a.length>9){ p.sh=a[9]; p.rise=a[10]||undefined; p.ang=a[11]; p.ln=a[12]||undefined; p.rot=Math.random()*6.28; }
+    net.pq.push(p); }
+  if(S.gh) for(const g of S.gh){ const own=mine&&g[6]===net.id; net.gq.push({cls:g[0],color:g[1],x:g[2],y:g[3],face:g[4],t0:own?now:base+g[5]}); }
+  if(S.sk) for(const q of S.sk) net.sq.push({x:q[0],y:q[1],a:q[2],at:base+q[3]});
+  if(net.pq.length>800) net.pq.splice(0,net.pq.length-800);
+}
+function netFxFrame(dt){
+  const pn=performance.now();
+  projectiles=[];
+  for(const [id,p] of net.pm){
+    const T=(p.owner&&p.owner===player&&!net.spec)?now:now-ND;   // your own shots in the present, everybody else's on the delayed timeline
+    if(p.gone&&T>=p.gone){ net.pm.delete(id); continue; }
+    if(T<p.born) continue;
+    const tt=T-p.st, nx=p.sx+p.vx*tt, ny=p.sy+p.vy*tt;
+    if(Math.hypot(nx-p.x,ny-p.y)>60){ p.x=nx; p.y=ny; } else { const k=Math.min(1,dt*25); p.x+=(nx-p.x)*k+p.vx*dt*(1-k); p.y+=(ny-p.y)*k+p.vy*dt*(1-k); }
+    projectiles.push(p); projTrail(p);
+  }
+  net.fxL=net.fxL.filter(f=>f&&now-f.t0<f.dur);
+  effects=net.fxA.filter(f=>f.t0<=now&&now-f.t0<f.dur).concat(net.fxL);
+  floaters=net.flA.filter(f=>f.t0<=now&&now-f.t0<1);
+  for(const z of zones) if(z.type!=='impact'&&now<z.until) zoneParts(z);
+  if(net.pq.length){ const keep=[]; for(const p of net.pq){ if(p.t0<=now) parts.push(p); else keep.push(p); } net.pq=keep; }
+  if(net.gq.length){ const keep=[]; for(const g of net.gq){ if(g.t0<=now) ghosts.push(g); else keep.push(g); } net.gq=keep; }
+  if(net.sq.length){ const keep=[]; for(const q of net.sq){ if(q.at<=now) addShake(q.x,q.y,q.a); else keep.push(q); } net.sq=keep; }
+  ghosts=ghosts.filter(g=>now-g.t0<.3);
+  if(pn-(net.pingT||0)>1000){ net.pingT=pn; wsSend({t:'ping',c:Math.round(pn)}); }
+}
+function netPong(m){ const r=performance.now()-m.c; if(r>=0&&r<5000) net.rtt=net.rtt==null?r:net.rtt*.7+r*.3; }
+// You see the other players ~ND + half your ping behind where they are on the host. When you aim at someone,
+// lead the shot by that much, so skill-shots hit as often as they do for the host.
+net.aim=(x,y)=>{
+  const me=player; if(!me||net.spec) return {x,y};
+  const lag=ND+Math.min(.3,(net.rtt||80)/2000), ax=x-me.x, ay=y-me.y, L=Math.hypot(ax,ay)||1, ux=ax/L, uy=ay/L;
+  let best=null, bp=1e9;
+  for(const t of ents){
+    if(t===me||t.dead||t.isBox||sameTeam(me,t)||!seenBy(me,t)) continue;
+    const rx=t.x-me.x, ry=t.y-me.y, al=rx*ux+ry*uy; if(al<0||al>Math.max(L,900)+60) continue;
+    const pp=Math.abs(rx*uy-ry*ux); if(pp<=t.r+40&&pp<bp){ bp=pp; best=t; }
+  }
+  if(!best||!(best.vx||best.vy)) return {x,y};
+  const f=L/Math.max(1,Math.hypot(best.x-me.x,best.y-me.y));
+  return {x:x+best.vx*lag*f, y:y+best.vy*lag*f};
+};
+// the swing of your basic attack is drawn at once (the host's copy would arrive a round trip late)
+net.localSwing=(me,x,y)=>{
+  if(me.dead||me.medOn||now<(me.stunUntil||0)||now<(me.fearUntil||0)||me.dash) return;
+  if(now<(net.bcd||0)||now<(me.basicCd||0)-.03) return;
+  const s=basicOf(me), rate=(now<(me.asUntil||0)?(me.asMul||1):1)*(1+(me.bAS||0));
+  net.bcd=now+(s.cd||.5)/rate;
+  const a=Math.atan2(y-me.y,x-me.x), melee=s.kind==='cone'; net.sw=-(net.sw||1);
+  net.anim=me.anim={t0:now,dur:melee?.2:.14,a,amp:melee?8:-3,sw:melee?{arc:s.arc,dir:net.sw}:null}; net.animT=performance.now();
+  me.face=a; net.fa=a; net.flT=performance.now()+250;
+};
+{ const _rd=render; render=function(){ _rd();
+    if(net.role==='client'&&state==='playing'&&net.rtt!=null){ const r=Math.round(net.rtt); txt('ping '+r+' ms',W-10,H-8,'12px Consolas,monospace',r<90?'#6dff8a':r<170?'#ffd24a':'#ff6a5a','right'); } }; }
+
 /* ---------------- hooks into the game ---------------- */
 const _update=update;
 update=function(dt){
   if(net.role==='client'){ clientFrame(dt); return; }
   if(net.role==='host'){
-    applyRemoteInputs(); _update(dt);
+    netFxPre(); applyRemoteInputs(); _update(dt); netFxPost();
     net.acc+=dt; if(net.acc>=1/20){ net.acc=0; if(wsOK()) broadcastSnap(); }
     return;
   }
@@ -4551,11 +4730,15 @@ specCycle=function(d){ _sc(d); if(net.spec&&player) net.specId=player.id; };
 const _cast=castSpell;
 castSpell=function(e,i,x,y){
   if(net.role==='client'){
-    if(e===player&&state==='playing'){
+    if(e===player&&state==='playing'&&!net.spec){
       if(player.dead||(player.cd[i]||0)>now+.05) return false;       // on cooldown: do not even send
+      const A=net.aim(x,y); x=A.x; y=A.y;
       wsSend({t:'cast',i,x:Math.round(x),y:Math.round(y)});
-      try{ const sp=spellOf(player,i); (net.pend||(net.pend={}))[i]={until:now+(sp.cd||0)*(1-(player.bCdr||0)),t:performance.now()};
-        player.cd[i]=net.pend[i].until; player.face=Math.atan2(y-player.y,x-player.x);
+      try{ const sp=spellOf(player,i); (net.pend||(net.pend={}))[i]={until:now+(sp.cd||0)*(1-Math.min(.6,player.bCdr||0))*(now<(player.manUntil||0)?.5:1),t:performance.now()};
+        const a=Math.atan2(y-player.y,x-player.x);
+        player.cd[i]=net.pend[i].until; player.face=a; net.fa=a; net.flT=performance.now()+350;
+        net.anim=player.anim={t0:now,dur:sp.kind==='cone'?.22:.18,a,amp:(sp.kind==='cone'||sp.kind==='dash')?7:-3,sw:null}; net.animT=performance.now();
+        fxRing(player.x,player.y,34,sp.color||'#fff',.25); (net.fxL||(net.fxL=[])).push(effects[effects.length-1]);
         burst(player.x,player.y,sp.color||'#fff',10,220,.3,3); clickMarks.push({x,y,t0:now}); }catch(err){}
     }
     return false; }
@@ -4563,12 +4746,12 @@ castSpell=function(e,i,x,y){
 };
 const _basic=basicAttack;
 basicAttack=function(e,x,y){
-  if(net.role==='client'){ if(e===player&&state==='playing') wsSend({t:'atk',x:Math.round(x),y:Math.round(y)}); return false; }
+  if(net.role==='client'){ if(e===player&&state==='playing'&&!net.spec){ const A=net.aim(x,y); wsSend({t:'atk',x:Math.round(A.x),y:Math.round(A.y)}); net.localSwing(player,A.x,A.y); } return false; }
   return _basic(e,x,y);
 };
 cv.addEventListener('mousedown',ev=>{
   if(net.role!=='client'||net.spec||ev.button!==2||state!=='playing'||!player||player.dead||hudHover()>=0) return;
-  wsSend({t:'move',x:Math.round(mouseW.x),y:Math.round(mouseW.y)});
+  wsSend({t:'move',x:Math.round(mouseW.x),y:Math.round(mouseW.y)}); net.path=findPath(player.x,player.y,mouseW.x,mouseW.y); net.nhp=performance.now()+100;
 });
 const _start=startGame;
 function composeTeams(){   // Team Duel lobby: build the match from the chosen slots (no automatic bots)
@@ -4593,7 +4776,7 @@ startGame=function(){
   net.lobbyTeams=lobby; net.fill=!!($('fillBots')&&$('fillBots').checked);
   if(lobby){
     const c=countTeams(-1);
-    if(!net.fill&&(c[0]===0||c[1]===0)){ setStatus('Each team needs at least one player (or tick "fill empty team slots with bots"). Pick your slots above.'); goStep(1); return; }
+    if(!net.fill&&(c[0]===0||c[1]===0)){ setStatus('Each team needs at least one player (or tick "fill empty team slots with bots"). Pick your slots in the waiting room.'); showScreen('wait'); updateWait(); $('waitStatus').textContent='Each team needs at least one player (or tick fill-with-bots when choosing the mode).'; return; }
     $('tsize').value='2';
   }
   _start();
@@ -4616,8 +4799,39 @@ endGame=function(w){
 };
 const _bc=buildCards;
 buildCards=function(){ _bc(); if(net.role==='client'&&wsOK()) wsSend({t:'cls',cls:selClass,lo:loadoutFor(selClass),kb:bindsFor(selClass)}); else if(net.role==='host'&&wsOK()) lobbyBroadcast(); };
-$('hostBtn').onclick=()=>{ connect('host'); };
-$('joinBtn').onclick=()=>{ connect('client'); };
+$('hostBtn').onclick=()=>{ beginHostFlow(); };
+$('joinBtn').onclick=()=>{ net.phase='connecting'; connect('client'); };
+
+
+/* ---------------- linear online flow: host picks the mode and hosts -> everyone picks champion + loadout -> waiting room -> host starts ---------------- */
+function updateWait(){
+  const L=net.last||[], total=L.length, rdy=L.filter(p=>p.rd).length, host=net.role==='host', all=total>0&&rdy===total;
+  $('waitMode').textContent='Game mode: '+(net.mode==='duel'?'Team Duel (1v1 / 2v2)':'Deathmatch');
+  $('waitStart').style.display=host?'':'none'; $('waitStart').disabled=!(host&&net.ready&&all);
+  $('waitStatus').textContent=!net.ready?'Pick your champion and loadout first.':host?(all?'Everyone is ready. Press START GAME.':'Waiting for the other players to pick their hero... ('+rdy+'/'+total+' ready)'):'You are ready. Waiting for the host to start the game...';
+}
+window.netFinishPick=()=>{   // called when a player finishes the loadout screen
+  net.ready=true; net.phase='wait';
+  if(net.role==='client') wsSend({t:'cls',cls:selClass,lo:loadoutFor(selClass),kb:bindsFor(selClass),ready:true});
+  showScreen('wait'); if(net.role==='host') lobbyBroadcast(); else updateWait();
+};
+function beginHostFlow(){   // HOST A GAME: first choose the game mode, only then connect as host
+  net.pending='host'; if(['tutorial','spec','train'].includes(modeEl.value)) modeEl.value='dm';
+  modeEl.onchange(); renderModeCards(); applyRoleUI(); goStep(1);
+}
+function startHosting(){ net.pending=null; net.ready=false; net.mode=modeEl.value; connect('host'); }
+const _uwb=updateWizardButtons;
+updateWizardButtons=function(){
+  _uwb();
+  if(net.pending==='host'&&wStep===1) $('wNext').textContent='HOST THIS GAME »';
+  if(net.role) $('wBack').style.display='none';   // no cycling back through the menus once you are in a game
+};
+{ const _wn=$('wNext').onclick;
+  $('wNext').onclick=()=>{ if(net.pending==='host'&&wStep===1){ startHosting(); return; } _wn(); }; }
+$('wBack').addEventListener('click',()=>{ if(net.pending&&wStep===1) net.pending=null; });
+$('waitStart').onclick=()=>startGame();
+$('waitLeave').onclick=()=>{ netDisconnect(); showScreen('mp'); };
+$('again').addEventListener('click',()=>{ if(net.role){ net.phase='wait'; showScreen('wait'); updateWait(); } });   // after a match: back to the waiting room
 
 /* ---------------- multiplayer screen: server instructions with live addresses ---------------- */
 window.ARENA_ONLINE=true;
@@ -4638,13 +4852,13 @@ async function mpRefresh(){
   $('mp').querySelectorAll('button[data-copy]').forEach(b=>{ b.onclick=()=>{ copyTxt(b.dataset.copy); b.textContent='COPIED'; setTimeout(()=>{ b.textContent='COPY'; },1200); }; });
 }
 window.mpEnter=()=>{ mpRefresh(); clearInterval(net.mpT); net.mpT=setInterval(mpRefresh,4000); };
-window.netDisconnect=()=>{ clearInterval(net.hb); if(net.ws) try{ net.ws.close(); }catch(e){} net.ws=null; net.role=null; net.started=false; net.players.clear(); $('mpNext').disabled=true; setStatus('Not connected. Host a game or join one.'); $('lobby').innerHTML=''; applyRoleUI(); };
+window.netDisconnect=()=>{ clearInterval(net.hb); if(net.ws) try{ net.ws.close(); }catch(e){} net.ws=null; net.role=null; net.started=false; net.players.clear(); net.pending=null; net.ready=false; net.phase='idle'; $('mpNext').disabled=true; setStatus('Not connected. Host a game or join one.'); $('lobby').innerHTML=''; applyRoleUI(); };
 $('lMulti').onclick=()=>showScreen('mp');
 $('mpBack').onclick=()=>{ netDisconnect(); showScreen('landing'); };
-$('mpNext').onclick=()=>goStep(1);
 if(/[?&]mp=1/.test(location.search)) showScreen('mp');
 })();
 </script>
+
 <script>
 (function(){
   // The browser pauses requestAnimationFrame when a tab is in the background / covered. A Worker timer is not paused,
@@ -4657,7 +4871,8 @@ if(/[?&]mp=1/.test(location.search)) showScreen('mp');
       if(state==='playing'&&net.role&&t-lastRun>70){ while(el>0.0001){ const d=Math.min(.033,el); el-=d; _u(d); } } };
   }catch(e){}
 })();
-</script><style>
+</script>
+<style>
 .navbtn{display:inline-block;text-decoration:none;cursor:pointer;background:#1b2e1a;color:#9c9;border:1px solid #3b5a38;padding:8px 16px;border-radius:4px;font:bold 14px Consolas,"Courier New",monospace;letter-spacing:1px}
 .navbtn:hover{background:#2a4a28;color:#fff}.navbtn.pri{background:#2c7a3a;color:#fff}
 #menu .backrow{margin-bottom:10px}
