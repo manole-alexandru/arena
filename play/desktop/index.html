@@ -63,9 +63,11 @@
   /* ---- tutorial ---- */
   #tut{display:none;position:fixed;top:12px;right:12px;width:min(350px,92vw);z-index:4;background:rgba(8,16,8,.94);border:2px solid #5dff7a;border-radius:6px;padding:12px 14px 10px;pointer-events:none;box-shadow:0 0 18px rgba(93,255,122,.2);font-size:13px;line-height:1.5;color:#cde}
   #tut.ok{border-color:#ffd24a;box-shadow:0 0 22px rgba(255,210,74,.35)}
-  #tut .tl{display:flex;justify-content:space-between;align-items:center;color:#5dff7a;font-size:11px;letter-spacing:2px}
+  #tut .tl{pointer-events:auto;cursor:move;display:flex;justify-content:space-between;align-items:center;color:#5dff7a;font-size:11px;letter-spacing:2px}
   #tut button{pointer-events:auto;padding:3px 10px;font-size:11px;letter-spacing:1px;background:#3a2020;border:1px solid #8a3a3a}
   #tut button:hover{background:#6a2a2a}
+  #tut #tutMin{background:#1d3a1d;border-color:#3b5a38;margin-right:6px}
+  #tut[data-min] #tutText,#tut[data-min] #tutNote{display:none !important}
   #tut h3{margin:4px 0 6px;color:#e8ffe8;font-size:17px;letter-spacing:1px}
   #tut b{color:#fff}
   kbd{display:inline-block;min-width:14px;text-align:center;padding:0 6px;border:1px solid #6dff8a;border-radius:3px;color:#6dff8a;background:#12200f;font:inherit;font-weight:bold}
@@ -81,6 +83,10 @@
   #tutBar span.dn{background:#5dff7a}
   #tutBar span.cur{background:#ffd24a}
   body.tut #bless,body.tut #blessChip{left:calc(50% - 170px)}
+  body.tutL #tut{right:auto;left:170px}   /* final stage: the rival's room is top-right, so the panel moves to the left */
+  #tutChars{z-index:7}
+  #tutCards .card{flex:1 1 230px;max-width:330px}
+  #tutCards .card.sel{border-color:#ffd24a}
   @media(max-width:700px){.lrow{grid-template-columns:1fr}}
   .lbox{border:2px solid #3b5a38;background:#0b110a;border-radius:8px;padding:20px}
   .lbox h2{margin:0 0 8px;color:#e8ffe8;font-size:22px}
@@ -162,7 +168,7 @@
 <div id="blessChip">&#9733; Blessing available &mdash; press <b>H</b></div>
 
 <div id="tut">
-  <div class="tl"><span id="tutLesson"></span><button id="tutExit">EXIT TUTORIAL</button></div>
+  <div class="tl" id="tutHead" title="Drag to move this panel"><span id="tutLesson"></span><span><button id="tutMin" title="Show / hide the explanation">&#8211;</button><button id="tutExit">EXIT TUTORIAL</button></span></div>
   <h3 id="tutTitle"></h3>
   <div id="tutText"></div>
   <ul id="tutList"></ul>
@@ -170,11 +176,17 @@
   <div id="tutOk"></div>
   <div id="tutBar"></div>
 </div>
+<div id="tutChars" class="overlay hidden"><div class="panel">
+  <h1 style="font-size:26px;letter-spacing:4px;color:#d77bff">CHARACTER CHANGE</h1>
+  <div class="sub">Pick any hero. You keep your position but start fresh as the new hero (power-ups are lost). Come back to this pad as often as you like.</div>
+  <div id="tutCards" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  <div style="margin-top:14px"><button id="tutKeep" style="background:#444">KEEP MY HERO</button></div>
+</div></div>
 <div id="tutEnd" class="overlay hidden"><div class="panel" style="max-width:540px;text-align:center">
   <h1 style="color:#ffd24a;font-size:30px">TUTORIAL COMPLETE</h1>
-  <div class="sub">You can move, zoom, see through the fog, attack, cast spells, grab power-ups and win a 1v1 duel.</div>
-  <p style="color:#9fbf9c;font-size:13px;line-height:1.6">You are ready for a real match. Pick a game mode, a champion and your loadout &mdash; or replay the tutorial any time from the main menu.</p>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px"><button id="tutPlay">PLAY A GAME</button><button id="tutAgain" style="background:#b8860b">REPLAY</button><button id="tutMenu" style="background:#444">MAIN MENU</button></div>
+  <div class="sub">You can move, zoom, see through the fog, attack, cast spells, grab power-ups, win a 1v1 duel and fight with any hero.</div>
+  <p style="color:#9fbf9c;font-size:13px;line-height:1.6">What next? Keep fighting the rival heroes for 5 more kills, go through every lesson again, or finish the tutorial and pick a real game mode.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px"><button id="tutMore" style="background:#b8860b">PLAY AROUND MORE (+5 KILLS)</button><button id="tutAgain" style="background:#2c5a8a">REDO ALL THE TUTORIAL</button><button id="tutPlay">FINISH TUTORIAL</button></div>
 </div></div>
 
 <div id="loadout" class="overlay hidden"><div class="panel">
@@ -400,7 +412,7 @@ function findPath(sx,sy,tx,ty){
    ============================================================ */
 const CLASSES = {
   mage: {
-    name:'Arcanist', shape:'circle', c:'#3b8bff', hp:480, speed:200, pref:430,
+    name:'Magician', shape:'circle', c:'#3b8bff', hp:480, speed:200, pref:430,
     basic:{name:'Arcane Bolt',cd:.8,kind:'proj',speed:800,range:560,pr:7,dmg:26,color:'#bff2ff',aiRange:480},
     blurb:'Glass-cannon artillery. Big skillshots and area damage; blinks through walls.',
     spells:[
@@ -414,7 +426,7 @@ const CLASSES = {
       {k:'F',off:true,name:'Supernova',cd:55,kind:'nova',r:270,dmg:190,stun:2.2,color:'#ffe36b',ai:'close',ult:true,desc:'ULTIMATE. A huge blast around you: 190 damage and a 2.2s stun. Wins team fights.'},
     ]},
   warrior: {
-    name:'Juggernaut', shape:'square', c:'#d63a3a', hp:1050, speed:250, pref:90,
+    name:'Warrior', shape:'square', c:'#d63a3a', hp:1050, speed:250, pref:90,
     basic:{name:'Sword Swing',cd:.6,kind:'cone',r:115,arc:1.6,dmg:32,color:'#e8e8e8'},
     blurb:'Fast, heavy tank. Short lunge, a directional shield, a drag chain and an ultimate that will not die.',
     spells:[
@@ -439,7 +451,7 @@ const CLASSES = {
       {k:'A',off:true,name:'Venom Edge',cd:5,kind:'empower',dur:6,fx:{dmg:55,burn:[25,4],color:'#7aff5a'},color:'#7aff5a',ai:'empower',desc:'Your next dagger hits for 55 and poisons for 4s. Keeps invisibility.'},
       {k:'S',name:'Snare',cd:11,kind:'mine',range:380,trig:70,arm:.7,life:14,dmg:0,slow:[.05,2.2],color:'#ffb347',ai:'mine',desc:'Utility: a hidden trap that roots (95% slow) whoever steps on it for 2.2s.'},
       {k:'D',off:true,name:'Crippling Strike',cd:10,kind:'empower',dur:6,fx:{dmg:85,slow:[.4,3],color:'#c07aff'},color:'#c07aff',ai:'empower',desc:'Your next dagger hits for 85 and slows by 60% for 3s. Keeps invisibility.'},
-      {k:'F',off:true,name:'Dark Execution',cd:50,kind:'backstab',range:800,base:90,missing:.6,color:'#ff4a8a',ai:'finish',ult:true,desc:'ULTIMATE. Teleport behind the enemy nearest your cursor and stab for 90 + 60% of their missing health. A kill lets you recast it within 5s.'},
+      {k:'F',off:true,name:'Dark Execution',cd:50,kind:'backstab',range:800,base:90,missing:.6,color:'#ff4a8a',ai:'finish',ult:true,desc:'ULTIMATE. Usable only while you are BEHIND the enemy: split the circle around them in two, the 180 degrees they face and the 180 behind them, and you must stand in the back half. Snap onto the back of the enemy nearest your cursor and stab for 90 + 60% of their missing health (no stun). A kill lets you recast it within 5s.'},
     ]},
   ranger: {
     name:'Ranger', shape:'hex', c:'#3fcf4a', hp:500, speed:215, pref:400, hitCdr:{slot:1,amt:1},
@@ -488,14 +500,14 @@ const CLASSES = {
     basic:{name:'Nature Bolt',cd:.55,kind:'proj',speed:820,range:480,pr:7,dmg:22,color:'#9aff7a',aiRange:440},
     blurb:'Druid who shifts form. Wolf: fast and bleeding. Bear: huge and tough. Hawk: fly over walls. Press a form key again to shift back. Player-only.',
     spells:[
-      {k:'Q',name:'Wolf Form',cd:3,kind:'form',form:'wolf',slot:0,spd:1.3,color:'#ff8a8a',ai:'shift',desc:'+30% speed. Your attack becomes a fast bite that makes enemies bleed. Press again to revert.'},
-      {k:'W',name:'Bear Form',cd:3,kind:'form',form:'bear',slot:1,hp:300,dr:.3,color:'#d8b080',ai:'shift',desc:'+300 max health and 30% less damage taken. Your attack is a heavy swipe. Press again to revert.'},
-      {k:'E',name:'Hawk Form',cd:8,kind:'form',form:'hawk',slot:2,dur:4,color:'#e8dcc0',desc:'Fly for 4s: cross walls in a straight line and sword/cone attacks cannot hit you. Fires feathers.'},
+      {k:'Q',name:'Wolf Form',cd:3,kind:'form',form:'wolf',slot:0,spd:1.2,entry:{dur:2,mul:1.6,bleed:[26,3]},color:'#ff8a8a',ai:'shift',desc:'+20% speed. Your attack becomes a very fast bite. SHIFT-IN BONUS: for the first 2s your bites hit 60% harder and cause deep bleeding. Press again to revert (shifting in again renews the bonus).'},
+      {k:'W',name:'Bear Form',cd:3,kind:'form',form:'bear',slot:1,hp:300,dr:.3,entry:{dur:2,shield:150},color:'#d8b080',ai:'shift',desc:'+300 max health and 30% less damage taken. Your attack is a heavy swipe. SHIFT-IN BONUS: a 150 shield for 2s. Press again to revert (shifting in again renews the bonus).'},
+      {k:'E',name:'Hawk Form',cd:8,kind:'form',form:'hawk',slot:2,dur:4,entry:{dur:2,haste:1.35},color:'#e8dcc0',desc:'Fly for 4s: cross walls in a straight line and sword/cone attacks cannot hit you. Fires feathers. SHIFT-IN BONUS: for the first 2s your speed is +35% (instead of the usual +20%, it does not stack).'},
       {k:'R',off:true,name:'Entangle',cd:13,kind:'ground',range:650,r:130,delay:.6,dmg:40,root:1.5,slow:[.5,3.2],color:'#6aff6a',ai:'attack',aiRange:620,desc:'Roots burst out after 0.6s: damage, 1.5s root, then a slow.'},
       {k:'A',name:'Thorn Armor',cd:11,kind:'buff',thorns:[.3,5],dr:[.85,5],color:'#7acf4a',ai:'defend',desc:'For 5s reflect 30% of damage you take and take 15% less.'},
       {k:'S',name:'Rejuvenate',cd:12,kind:'buff',rejuv:[40,4],color:'#6aff9a',ai:'defend',desc:'Heal 40 health per second for 4s. Moving does not break it.'},
       {k:'D',off:true,name:'Spore Cloud',cd:11,kind:'zone',range:600,r:140,dur:5,dps:26,reveal:true,slow:[.8,.4],color:'#b8e64a',ai:'attack',aiRange:560,desc:'Poison cloud for 5s: it hurts, slows a little and reveals invisible enemies.'},
-      {k:'F',off:true,name:'Primal Avatar',cd:60,kind:'avatar',avatar:8,hp:300,dr:.3,spd:1.3,r:280,dmg:160,stun:1.2,color:'#6aff6a',ult:true,ai:'close',desc:'ULTIMATE. For 8s you are wolf, bear and hawk at once: +30% speed, +300 health, 30% less damage, flight over walls and a bleeding maul. You cannot shift out. When it ends, one big nova (160 damage, 1.2s stun) bursts around you.'},
+      {k:'F',off:true,name:'Primal Avatar',cd:60,kind:'avatar',avatar:8,hp:300,dr:.3,spd:1.2,entry:{dur:2,mul:1.6,bleed:[26,3],shield:150,haste:1.35},r:280,color:'#6aff6a',ult:true,ai:'close',desc:'ULTIMATE. For 8s you are wolf, bear and hawk at once: +20% speed, +300 health, 30% less damage, flight over walls, a fast maul up close and a weaker ranged bolt at distance (when an enemy is within reach you melee automatically). SHIFT-IN BONUS: for the first 2s you get +35% speed (it does not stack), a 150 shield, and a maul that hits 60% harder and causes deep bleeding. You cannot shift out.'},
     ]},
   fool: {
     name:'The Fool', shape:'jester', c:'#ffd24a', hp:680, speed:235, pref:260, playerOnly:true,
@@ -534,14 +546,14 @@ const UPG={
   ranger:[[{dmg:200,range:2600,cd:3},'More damage and range, faster cooldown.'],[{dist:290,cd:6},'Longer roll; each hit now cuts 2s.'],[{count:9,spread:1.1,dmg:26,slow:[.5,2]},'Nine arrows, stronger slow.'],[{r:200,dmg:240,delay:.7,stun:.5},'Bigger, faster, stuns.'],[{r:480,dur:10,cd:10},'Larger and lasts 10s.'],[{as:[2.8,6],cd:9},'+180% attack speed for 6s.'],[{dmg:90,stun:2.2,trig:95,cd:4},'Stronger, wider trap.'],[{hp:800,dur:35,dmg:55,cd:45},'Tougher, stronger, longer-lived beast.']],
   paladin:[[{r:185,dmg:155,stun:.8,cd:2.5},'Wider, harder, longer stun.'],[{boost:[1.55,7],as:[1.6,7],holy:[.35,7],cd:8},'Stronger and lasts 7s.'],[{shield:[420,10],cd:8},'420 shield, shorter cooldown.'],[{r:205,dmg:270,stun:1.2,cd:14},'Bigger, deadlier judgment.'],[{dmg:120,stun:1.1,pierce:true,cd:4},'Pierces, harder stun.'],[{heal:360,shield:[120,5],cd:10},'Heals 360 and shields.'],[{r:200,dur:6,dps:40,healOwner:65,cd:8},'Bigger, longer, heals more.'],[{ascend:14,shield:[500,14],boost:[1.6,14],as:[1.8,14],cd:55},'Lasts 14s, much stronger.']],
   warlock:[[{dmg:230,drain:1.2,cd:3},'Bigger bolt, heals 120%.'],[{dmg:50,burn:[65,7],cd:5},'Much stronger damage over time.'],[{curse:10,slow:[.4,2],pierce:true,cd:6},'Pierces: curses everything it passes.'],[{r:320,fear:3.5,cd:13},'Wider, longer fear.'],[{r:190,dur:7,dps:60,cd:9},'Bigger, longer, deadlier.'],[{cost:60,shield:[480,6],haste:[1.3,3],cd:9},'Cheaper, bigger shield, speed.'],[{r:230,dmg:150,drain:.9,cd:4},'Wider and hits much harder.'],[{dur:11,r:440,dps:110,cd:50},'Longer, wider, 110 damage/s.']],
-  wildshaper:[[{spd:1.5,cd:2},'Faster wolf, quicker to shift.'],[{hp:500,dr:.4,cd:2},'+500 health and 40% damage reduction.'],[{dur:6,cd:6},'Fly for 6s.'],[{r:185,dmg:90,root:2.2,cd:10},'Bigger, harder, roots for 2.2s.'],[{thorns:[.5,7],dr:[.8,7],cd:9},'Reflect 50% for 7s.'],[{rejuv:[65,5],cd:10},'Heal 65 per second for 5s.'],[{r:190,dur:7,dps:44,cd:8},'Bigger, longer, deadlier cloud.'],[{avatar:11,hp:500,dr:.4,r:340,dmg:260,stun:1.8,cd:50},'Lasts 11s, tougher, and the final nova is bigger and hits much harder.']],
+  wildshaper:[[{spd:1.4,cd:2},'Faster wolf, quicker to shift.'],[{hp:500,dr:.4,cd:2},'+500 health and 40% damage reduction.'],[{dur:6,cd:6},'Fly for 6s.'],[{r:185,dmg:90,root:2.2,cd:10},'Bigger, harder, roots for 2.2s.'],[{thorns:[.5,7],dr:[.8,7],cd:9},'Reflect 50% for 7s.'],[{rejuv:[65,5],cd:10},'Heal 65 per second for 5s.'],[{r:190,dur:7,dps:44,cd:8},'Bigger, longer, deadlier cloud.'],[{avatar:11,hp:500,dr:.4,cd:50},'Lasts 11s, +500 health and 40% damage reduction, shorter cooldown.']],
   fool:[[{twice:true,cd:3},'Draws TWO cards at once.'],[{dist:400,bliss:1.7,cd:9},'Longer dash and 1.7s of immunity.'],[{dur:12,range:1050,cd:11},'Farther, longer-lasting portal.'],[{dist:1200,nova:{r:240,dmg:320},cd:16},'Leap farther and land much harder.'],[{boons:2,cd:12},'Two boons at once.'],[{dur:20,cd:10},'Lasts longer, shorter cooldown.'],[{count:2,dur:14,cd:9},'Dodges the next TWO abilities.'],[{dur:28,cd:65},'Lasts 28s, shorter cooldown.']],
   runekeeper:[[{dur:36,max:10,cd:2.5},'Runes last 36s; keep up to 10.'],[{cd:0},'No cooldown.'],[{ext:22,cd:4},'+22s and a shorter cooldown.'],[{mult:2,rs:1.5,cd:7},'Much bigger and harder detonation.'],[{double:true,cd:5},'Every rune fires two bolts.'],[{chan:.75,cd:9},'Only a 0.75s channel, shorter cooldown.'],[{count:2,cd:3.5},'Throw two runes at once.'],[{dur:12,cd:50},'Lasts 12s, shorter cooldown.']],
 };
 function spellOf(e,i){
   let b=CLASSES[e.cls].spells[i];
   if(b.kind==='runeswap') b={...b,name:RUNES[e.runeSel|0].name};
-  if(e.upg&&e.upg[i]){ const u=UPG[e.cls][i]; return {...b,...u[0],name:b.name+'+',desc:'UPGRADED: '+u[1],upgraded:true}; }
+  if(e.upg&&e.upg[i]){ const u=UPG[e.cls][i], m={...b,...u[0]}; return {...m,name:b.name+'+',desc:'UPGRADED: '+u[1]+dmgText(m),upgraded:true}; }
   return b;
 }
 const CLASS_KEYS = Object.keys(CLASSES);
@@ -700,7 +712,7 @@ const mouse={x:0,y:0}, mouseW={x:0,y:0};
 let mouseHeld=false, atkHeld=false, nextHoldPath=0;
 const keys={};
 // tutorial state (the tutorial itself lives at the bottom of this script)
-const tut={on:false,i:-1,s:null,doneAt:0,tStart:0,f:{},used:new Set(),box:null,dummies:[],bot:null,botAI:null,noSpells:true,noClickMove:false,noteUntil:0,listHtml:'',wasDead:false};
+const tut={on:false,i:-1,s:null,doneAt:0,tStart:0,f:{},used:new Set(),box:null,dummies:[],bot:null,botAI:null,noSpells:true,noClickMove:false,noteUntil:0,listHtml:'',wasDead:false,charSt:null,charArmed:true,kills:0,goal:5,respawnAt:0,origClass:null,freeze:false};
 
 const BOT_NAMES=['Vex','Krieg','Moth','Blaze','Nyx','Rook','Pike','Juno','Ash','Dune','Echo','Fang','Goth','Hex','Ion'];
 
@@ -760,6 +772,14 @@ function landHawk(e){
     const a=k*.5236, x=e.x+Math.cos(a)*rad, y=e.y+Math.sin(a)*rad;
     if(!circleHit(x,y,e.r)){ e.x=x; e.y=y; e.path=[]; return; }
   }
+}
+function formEntry(e,s){   // short bonus right after shifting into a form: wolf = harder, bleeding bites; bear = shield; hawk = speed
+  const en=s.entry; if(!en) return; const f=s.form||'avatar';   // the Primal Avatar gets all three bonuses at once
+  if(f==='wolf'||f==='avatar') e.wolfBoost={until:now+en.dur,mul:en.mul,bleed:en.bleed};
+  if(f==='bear'||f==='avatar'){ e.shield=(now<e.shieldUntil?e.shield:0)+en.shield; e.shieldUntil=Math.max(e.shieldUntil,now+en.dur); }
+  if(f==='hawk'||f==='avatar') e.hawkRush={until:now+en.dur,mul:en.haste};   // replaces the form's normal speed for 2s (it does not stack on top of it)
+  if(e.isPlayer) floaters.push({x:e.x,y:e.y-50,v:0,txt:f==='wolf'?'BLOODRUSH':f==='bear'?'SHIELD':f==='hawk'?'TAILWIND':'PRIMAL RUSH',t0:now,last:now,col:s.color});
+  fxRing(e.x,e.y,70,s.color,.4);
 }
 function clearForm(e){
   if(!e.form) return;
@@ -1566,10 +1586,13 @@ const K={
   zone(e,s,a,tx,ty){ const p=clampTo(e,tx,ty,s.range); zones.push({type:'zone',x:p.x,y:p.y,r:s.r,start:now,until:now+s.dur,owner:e,s}); },
   mine(e,s,a,tx,ty){ const p=clampTo(e,tx,ty,s.range); { const own=mines.filter(m=>m.owner===e); if(own.length>=3) mines.splice(mines.indexOf(own[0]),1); } mines.push({x:p.x,y:p.y,owner:e,s,arm:now+s.arm,until:now+s.life}); },
   backstab(e,s,a,tx,ty){
-    let t=null,bd=170;
+    // Split the circle around each enemy into two halves: the 180 degrees it faces, and the 180 behind it. You may only strike an enemy you are standing behind.
+    let t=null,bd=170,front=false;
     for(const o of ents){ if(o===e||o.dead||sameTeam(e,o)||!seenBy(e,o)||now<o.invulnUntil) continue; if(Math.hypot(o.x-e.x,o.y-e.y)>s.range) continue;
-      const d=Math.hypot(o.x-tx,o.y-ty); if(d<bd){ bd=d; t=o; } }
-    if(!t) return false;
+      const d=Math.hypot(o.x-tx,o.y-ty); if(d>=bd) continue;
+      if(Math.cos(Math.atan2(e.y-o.y,e.x-o.x)-o.face)>=0){ front=true; continue; }   // you are in the half the enemy faces
+      bd=d; t=o; }
+    if(!t){ if(front&&e.isPlayer) floaters.push({x:e.x,y:e.y-40,v:0,txt:'MUST BE BEHIND THE ENEMY',t0:now,last:now,col:s.color}); return false; }
     const ox=e.x, oy=e.y, off=t.r+e.r+6; let placed=false;
     for(const da of [0,.7,-.7,1.4,-1.4,Math.PI]){
       const ang=t.face+Math.PI+da, x=t.x+Math.cos(ang)*off, y=t.y+Math.sin(ang)*off;
@@ -1580,7 +1603,7 @@ const K={
     fxRing(ox,oy,40,s.color,.3); fxTrail(ox,oy,e.x,e.y,s.color); burst(ox,oy,s.color,16,180,.45,3.5); burst(e.x,e.y,s.color,22,240,.5,4); fxFlash(e.x,e.y,50,'#ffffff',.2); addShake(e.x,e.y,9);
     const dmg=s.base+(t.maxHp-t.hp)*s.missing;
     fxSlash(e.x,e.y,e.face,2.2,95,s.color,.25,1);
-    hit(e,t,dmg,{color:s.color,stun:.35});
+    hit(e,t,dmg,{color:s.color});
     if(t.dead){ const i=7; e.cd[i]=now+.3; e.recastUntil=now+5; e.recastFull=s.cd; floaters.push({x:e.x,y:e.y-36,v:0,txt:'RECAST!',t0:now,last:now,col:'#ff4a8a'}); }
   },
   summon(e,s){
@@ -1591,17 +1614,19 @@ const K={
   },
   channel(e,s){ if(e.medOn){ e.medOn=false; return; } e.medOn=true; e.medS=s; e.path=[]; e.moveVec=null; fxRing(e.x,e.y,50,s.color,.4); },
   aura(e,s){ e.aura={until:now+s.dur,r:s.r,dps:s.dps,color:s.color}; fxRing(e.x,e.y,s.r,s.color,.6); burst(e.x,e.y,s.color,24,240,.6,4); addShake(e.x,e.y,6); },
-  empower(e,s){ e.empower={fx:s.fx,until:now+s.dur}; e.basicCd=0; fxRing(e.x,e.y,44,s.color,.4); burst(e.x,e.y,s.color,12,150,.45,3.5); },
+  empower(e,s){
+    if(e.empower&&now<e.empower.until){ if(e.isPlayer) floaters.push({x:e.x,y:e.y-40,v:0,txt:'STRIKE ALREADY ACTIVE',t0:now,last:now,col:s.color}); return false; }   // only one empowered strike at a time (Venom Edge / Crippling Strike); it is used up by your next basic attack
+    e.empower={fx:s.fx,until:now+s.dur}; e.basicCd=0; fxRing(e.x,e.y,44,s.color,.4); burst(e.x,e.y,s.color,12,150,.45,3.5); },
   ward(e,s,a,tx,ty){ const p=clampTo(e,tx,ty,s.range); wards.push({x:p.x,y:p.y,r:s.r,until:now+s.dur,owner:e,color:s.color}); fxRing(p.x,p.y,s.r,s.color,.5); burst(p.x,p.y,s.color,14,160,.5,3.5); },
   spin(e,s){ e.spin={until:now+s.dur,next:now+s.tick,s}; fxRing(e.x,e.y,s.r,s.color,.3); },
   /* ---- Wildshaper ---- */
   form(e,s){
     if(e.form==='avatar') return false;   // locked into the Avatar until it ends
     if(e.form===s.form){ clearForm(e); fxRing(e.x,e.y,44,s.color,.35); burst(e.x,e.y,s.color,14,160,.4,3.5); return false; }
-    setForm(e,s.form,s);
+    setForm(e,s.form,s); formEntry(e,s);
   },
   avatar(e,s){
-    setForm(e,'avatar',s); addShake(e.x,e.y,8); fxFlash(e.x,e.y,90,'#ffffff',.25); fxRing(e.x,e.y,130,s.color,.6); burst(e.x,e.y,s.color,30,280,.7,4);
+    setForm(e,'avatar',s); formEntry(e,s); addShake(e.x,e.y,8); fxFlash(e.x,e.y,90,'#ffffff',.25); fxRing(e.x,e.y,130,s.color,.6); burst(e.x,e.y,s.color,30,280,.7,4);
     floaters.push({x:e.x,y:e.y-36,v:0,txt:'PRIMAL AVATAR',t0:now,last:now,col:s.color});
   },
   /* ---- The Fool ---- */
@@ -1708,11 +1733,52 @@ const K={
 
 const ASC_BASIC={name:'Holy Bolt',cd:.45,kind:'proj',speed:950,range:640,pr:8,dmg:34,color:'#fff2a0',aiRange:560};
 const WILD_BASIC={
-  wolf:{name:'Bite',cd:.3,kind:'cone',r:70,arc:1.5,dmg:14,burn:[9,3],color:'#ff8a8a'},
+  wolf:{name:'Bite',cd:.22,kind:'cone',r:70,arc:1.5,dmg:14,color:'#ff8a8a'},   // very fast bites; bleeding only comes from the shift-in bonus
   bear:{name:'Maul',cd:.7,kind:'cone',r:100,arc:1.9,dmg:38,color:'#d8b080'},
   hawk:{name:'Feather',cd:.4,kind:'proj',speed:950,range:520,pr:5,dmg:16,color:'#e8dcc0',aiRange:480},
-  avatar:{name:'Primal Maul',cd:.4,kind:'cone',r:105,arc:2,dmg:36,burn:[12,3],color:'#6aff6a'},
+  avatar:{name:'Primal Bolt',cd:.4,kind:'proj',speed:900,range:560,pr:7,dmg:20,color:'#6aff6a',aiRange:500,
+    melee:{name:'Primal Maul',cd:.3,kind:'cone',r:105,arc:2,dmg:36,color:'#6aff6a'}},   // ranged bolt by default; an enemy within maul reach is mauled instead
 };
+
+/* ---------- damage line for every spell description, built from the spell's own numbers ---------- */
+function dmgText(s){
+  const f=n=>String(Math.round(n*10)/10), burn=b=>b?', then '+f(b[0])+'/s burn for '+f(b[1])+'s ('+f(b[0]*b[1])+' total)':'';
+  const D=s.dmg||0, runes=m=>RUNES.map(r=>r.name+' '+Math.round(r.dmg*m)).join(', ');
+  let t='';
+  switch(s.kind){
+    case 'proj':
+      if(D>0) t=(s.count>1?f(D)+' per projectile, '+s.count+' projectiles ('+f(D*s.count)+' if all hit)':f(D)+' on hit')+(s.explode?', explodes (radius '+s.explode+')':'')+(s.pierce?', pierces through enemies':'')+burn(s.burn)+(s.drain?'; heals you for '+Math.round(s.drain*100)+'% of it':'');
+      break;
+    case 'cone': if(D>0) t=f(D)+' to enemies in the cone'+(s.exec?'; x'+s.exec.mult+' ('+f(D*s.exec.mult)+') against enemies below '+Math.round(s.exec.thr*100)+'% health':''); break;
+    case 'dash': if(D>0) t=f(D)+' to enemies you dash through'; break;
+    case 'ground': if(D>0) t=f(D)+' in a '+s.r+' radius after '+s.delay+'s'; break;
+    case 'nova': if(D>0) t=f(D)+' in a '+s.r+' radius'+(s.drain?'; heals you for '+Math.round(s.drain*100)+'% of it':''); break;
+    case 'spin': t=f(D)+' every '+s.tick+'s for '+s.dur+'s ('+f(D*Math.round(s.dur/s.tick))+' if they stay in range)'; break;
+    case 'zone': case 'aura': if(s.dps>0) t=f(s.dps)+'/s for '+s.dur+'s ('+f(s.dps*s.dur)+' total) inside a '+s.r+' radius'; break;
+    case 'mine': if(D>0) t=f(D)+' when it triggers'; break;
+    case 'summon': t=f(D)+' per hit from the beast'; break;
+    case 'backstab': t=f(s.base)+' + '+Math.round(s.missing*100)+'% of the target\'s missing health'; break;
+    case 'blink': case 'leap': if(s.nova) t=f(s.nova.dmg)+' in a '+s.nova.r+' radius on arrival'; break;
+    case 'empower': if(s.fx&&s.fx.dmg) t='your next basic attack deals '+f(s.fx.dmg)+burn(s.fx.burn); break;
+    case 'avatar': { const b=WILD_BASIC.avatar, m=b.melee; t='close up your maul deals '+f(m.dmg)+', at range your bolt deals '+f(b.dmg); if(s.entry) t+='. For 2s after casting the maul deals '+f(m.dmg*s.entry.mul)+burn(s.entry.bleed); break; }
+    case 'form': { const b=WILD_BASIC[s.form]; if(b){ t='your basic attack becomes '+b.name+': '+f(b.dmg)+' per hit'+burn(b.burn); if(s.entry&&s.entry.mul) t+='. For 2s after shifting in: '+f(b.dmg*s.entry.mul)+' per hit'+burn(s.entry.bleed); } break; }
+    case 'wildcard': t='the damage of the drawn ability (e.g. Fireball 115, Meteor 230, Cleave 105, Power Shot 115, Judgment 175)'; break;
+    case 'runeboom': t=runes(s.mult)+' in a blast 25% wider (Kenaz also burns)'; break;
+    case 'runevolley': t='each rune fires a bolt worth 40% of its damage ('+runes(.4)+')'; break;
+    case 'runethrow': t='a random rune bursts for 85% of its damage ('+runes(.85)+')'; break;
+    case 'runeseal': t='every 0.4s each rune strikes trapped enemies for 66% of its damage, then a final blast of 180% ('+runes(1.8)+')'; break;
+    case 'runeplace': t='runes empower your basic attacks while you stand on them'; break;
+    case 'channel': t='builds up to +'+Math.round(s.max*100)+'% damage on all your attacks'; break;
+    case 'buff':
+      if(s.thorns) t='attackers take '+Math.round(s.thorns[0]*100)+'% of the damage they deal to you';
+      else if(s.boost) t='your damage is +'+Math.round((s.boost[0]-1)*100)+'% for '+s.boost[1]+'s';
+      break;
+  }
+  if(!t){ if(s.curse&&!s.dps) t='a cursed enemy takes 25% more damage from everything'; else return ''; }   // spells without damage get no damage line at all
+  else if(s.curse&&s.dps) t+='; cursed enemies take 25% more damage';
+  return ' DAMAGE: '+t+'.';
+}
+for(const c of CLASS_KEYS) for(const sp of CLASSES[c].spells) sp.desc+=dmgText(sp);
 function basicOf(e){ if(e.cls==='wildshaper'&&e.form) return WILD_BASIC[e.form]; return (e.cls==='paladin'&&now<e.ascendUntil)?ASC_BASIC:CLASSES[e.cls].basic; }
 const slotOn=(i,e)=>{ if(tut.on&&tut.noSpells&&e&&e.isPlayer) return false; if(e&&e.loadout) return i===7||e.loadout.includes(i); return spellCount>=8||i<4||i===7; };   // e.loadout = the player's own 5-spell picks
 function castSpell(e,i,tx,ty){
@@ -1738,7 +1804,13 @@ function castSpell(e,i,tx,ty){
 
 function basicAttack(e,tx,ty){
   if(e.dead||e.medOn||now<e.stunUntil||now<e.fearUntil||e.dash||now<e.basicCd) return false;
-  let s=basicOf(e); const a=Math.atan2(ty-e.y,tx-e.x);
+  let s=basicOf(e);
+  if(e.form==='avatar'&&s.melee){   // Primal Avatar: strong melee when an enemy is close, weaker ranged bolt otherwise
+    let near=null,nd=1e9; for(const t of foes(e)){ const d=dst(e,t); if(d<=s.melee.r+t.r&&d<nd){ nd=d; near=t; } }
+    if(near){ s=s.melee; tx=near.x; ty=near.y; }
+  }
+  if((e.form==='wolf'||(e.form==='avatar'&&s.kind==='cone'))&&e.wolfBoost&&now<e.wolfBoost.until) s={...s,dmg:s.dmg*e.wolfBoost.mul,burn:e.wolfBoost.bleed,color:'#ff3a3a'};   // wolf / avatar shift-in bonus: harder, bleeding hits
+  const a=Math.atan2(ty-e.y,tx-e.x);
   e.stealthUntil=0;
   e.face=a; e.faceLock=now+.25; e.basicCd=now+s.cd/((now<e.asUntil?e.asMul:1)*(1+(e.bAS||0)));
   if(e.empower&&now<e.empower.until){ s={...s,...e.empower.fx}; fxRing(e.x,e.y,48,s.color,.3); }
@@ -1781,32 +1853,54 @@ function pickEnemyAt(x,y){
 
 /* ---------- fog of war ---------- */
 const FOG_N=360, visR=new Float32Array(FOG_N), visT=new Float32Array(FOG_N).fill(-1); let fogC=null, fogX=null, visFace=null;
-function computeVision(){
-  const e=player, vm=1+(e.bVis||0), fly=flies(e);   // anything flying sees over walls
-  if(visFace===null) visFace=e.face;
-  visFace+=Math.atan2(Math.sin(e.face-visFace),Math.cos(e.face-visFace))*.2;
+// one hero's vision polygon: R = visible radius per ray (smoothed), T = raw target radius, st.face = smoothed facing
+function visCalc(e,R,T,st){
+  const vm=1+(e.bVis||0), fly=flies(e);   // anything flying sees over walls
+  if(st.face===null) st.face=e.face;
+  st.face+=Math.atan2(Math.sin(e.face-st.face),Math.cos(e.face-st.face))*.2;
   for(let i=0;i<FOG_N;i++){
     const th=-Math.PI+(i+.5)/FOG_N*2*Math.PI;
-    const d=Math.abs(Math.atan2(Math.sin(th-visFace),Math.cos(th-visFace)));
+    const d=Math.abs(Math.atan2(Math.sin(th-st.face),Math.cos(th-st.face)));
     let t=clamp((1.3-d)/.6,0,1); t=t*t*(3-2*t);
     const maxR=(480+(1250-480)*t)*vm;
     const c=Math.cos(th), sn=Math.sin(th); let lo=0, hi=maxR;
     if(!fly&&(solidAt(e.x+c*maxR,e.y+sn*maxR)||!lineClearPt(e.x,e.y,c,sn,maxR))){
       let len=0; while(len<maxR&&!solidAt(e.x+c*(len+8),e.y+sn*(len+8))) len+=8;
       lo=len; hi=len+8; for(let k=0;k<4;k++){ const m=(lo+hi)/2; if(solidAt(e.x+c*m,e.y+sn*m)) hi=m; else lo=m; }
-      visT[i]=lo;
-    } else visT[i]=maxR;
+      T[i]=lo;
+    } else T[i]=maxR;
     // temporal smoothing against flicker
-    visR[i]=visR[i]>0&&Math.abs(visR[i]-visT[i])<260?visR[i]+(visT[i]-visR[i])*.55:visT[i];
+    R[i]=R[i]>0&&Math.abs(R[i]-T[i])<260?R[i]+(T[i]-R[i])*.55:T[i];
   }
   // spatial smoothing
-  const tmp=Float32Array.from(visR);
-  for(let i=0;i<FOG_N;i++){ const a=tmp[(i+FOG_N-1)%FOG_N], c2=tmp[(i+1)%FOG_N]; visR[i]=Math.min(visT[i]+6,(a+tmp[i]*2+c2)/4); }
+  const tmp=Float32Array.from(R);
+  for(let i=0;i<FOG_N;i++){ const a=tmp[(i+FOG_N-1)%FOG_N], c2=tmp[(i+1)%FOG_N]; R[i]=Math.min(T[i]+6,(a+tmp[i]*2+c2)/4); }
+}
+// Team Duel: you see through your living allies' eyes too
+const allyVisMap=new WeakMap(); let allyVis=[];
+function computeAllyVision(){
+  allyVis=[];
+  if(!teamMode||spectating||!player) return;
+  for(const e of ents){
+    if(e===player||e.dead||e.isBox||e.team!==player.team) continue;
+    let v=allyVisMap.get(e); if(!v){ v={R:new Float32Array(FOG_N),T:new Float32Array(FOG_N).fill(-1),st:{face:null}}; allyVisMap.set(e,v); }
+    visCalc(e,v.R,v.T,v.st); allyVis.push({e,R:v.R});
+  }
+}
+function computeVision(){
+  const st={face:visFace};
+  visCalc(player,visR,visT,st); visFace=st.face;
+  computeAllyVision();
 }
 function lineClearPt(x,y,c,sn,len){ for(let l=8;l<=len;l+=8) if(solidAt(x+c*l,y+sn*l)) return false; return true; }
 function visiblePt(x,y,r=0){
   if(now<thirdEyeUntil) return true;
-  for(const w of wards) if(w.owner===player&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  for(const w of wards) if((w.owner===player||sameTeam(w.owner,player))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
+  for(const a of allyVis){   // an ally sees it
+    const ax=x-a.e.x, ay=y-a.e.y, ad=Math.hypot(ax,ay);
+    if(ad<=r+20) return true;
+    if(ad-r<=a.R[Math.floor((Math.atan2(ay,ax)+Math.PI)/(2*Math.PI)*FOG_N)%FOG_N]+6) return true;
+  }
   const dx=x-player.x, dy=y-player.y, d=Math.hypot(dx,dy);
   if(d<=r+20) return true;
   const i=Math.floor((Math.atan2(dy,dx)+Math.PI)/(2*Math.PI)*FOG_N)%FOG_N;
@@ -1829,7 +1923,16 @@ function renderFog(){
     if(i) fogX.lineTo(x,y); else fogX.moveTo(x,y);
   }
   fogX.closePath(); fogX.fill();
-  for(const w of wards){ if(w.owner!==player) continue; fogX.beginPath(); fogX.arc((w.x-cam.x)*SC+W/2,(w.y-cam.y)*SC+H/2,w.r*SC,0,7); fogX.fill(); }
+  for(const a of allyVis){   // your allies' vision clears the fog too
+    fogX.beginPath();
+    for(let i=0;i<FOG_N;i++){
+      const th=-Math.PI+(i+.5)/FOG_N*2*Math.PI;
+      const x=(a.e.x+Math.cos(th)*a.R[i]-cam.x)*SC+W/2, y=(a.e.y+Math.sin(th)*a.R[i]-cam.y)*SC+H/2;
+      if(i) fogX.lineTo(x,y); else fogX.moveTo(x,y);
+    }
+    fogX.closePath(); fogX.fill();
+  }
+  for(const w of wards){ if(w.owner!==player&&!sameTeam(w.owner,player)) continue; fogX.beginPath(); fogX.arc((w.x-cam.x)*SC+W/2,(w.y-cam.y)*SC+H/2,w.r*SC,0,7); fogX.fill(); }
   fogX.filter='none'; fogX.globalCompositeOperation='source-over';
   ctx.drawImage(fogC,0,0);
 }
@@ -1864,6 +1967,7 @@ const BLESS_HEAD='&#9733; BLESSING &mdash; choose one: press <b>1</b> <b>2</b> <
 const ITEM_HEAD='&#9670; ITEM &mdash; choose one (you can hold only one): press <b>1</b> <b>2</b> <b>3</b> &middot; <b>H</b> hide / show';
 function announce(t){ announceText=t; announceUntil=now+6; feed.push({msg:t,col:'#ffd24a',t0:now}); }
 function spawnBlessing(){
+  if(sched) sched.fb=true;   // the first blessing has appeared: damage pickups may now spawn in the spawn rooms too
   blessing={x:CHX,y:CHY,alive:true};
   announce('\u2726 A BLESSING HAS APPEARED IN THE CENTRAL CHAMBER \u2726');
 }
@@ -1932,14 +2036,16 @@ function specCycle(d){
 }
 // Team Duel: heals / damage / speed live in the four plain rooms and re-appear at a random spot after being taken
 function placePickup(q){
-  const rooms=duelRooms.map(r=>({r,n:pickups.filter(o=>o!==q&&o.alive&&o.x>=r[0]*T&&o.x<(r[2]+1)*T&&o.y>=r[1]*T&&o.y<(r[3]+1)*T).length})).sort((a,b)=>a.n-b.n+Math.random()-.5);
+  // duelRooms: 0 top, 1 bottom, 2 left, 3 right. Rooms 2 and 3 are the team spawn rooms: until the first blessing has appeared, no damage pickup may spawn there (one team could grab it first)
+  const noSpawnRooms=q.type==='damage'&&!(sched&&sched.fb), pool=duelRooms.filter((r,i)=>!(noSpawnRooms&&(i===2||i===3)));
+  const rooms=pool.map(r=>({r,n:pickups.filter(o=>o!==q&&o.alive&&o.x>=r[0]*T&&o.x<(r[2]+1)*T&&o.y>=r[1]*T&&o.y<(r[3]+1)*T).length})).sort((a,b)=>a.n-b.n+Math.random()-.5);
   for(let tries=0;tries<200;tries++){
     const r=rooms[tries<120?ri(0,1):ri(0,rooms.length-1)].r, x=ri(r[0]+1,r[2]-1)*T+T/2, y=ri(r[1]+1,r[3]-1)*T+T/2;
     if(circleHit(x,y,44)) continue;
     if(pickups.some(o=>o!==q&&o.alive&&Math.hypot(o.x-x,o.y-y)<260)) continue;
     q.x=x; q.y=y; return;
   }
-  const r=duelRooms[ri(0,duelRooms.length-1)]; q.x=(r[0]+r[2]+1)/2*T; q.y=(r[1]+r[3]+1)/2*T;
+  const r=pool[ri(0,pool.length-1)]; q.x=(r[0]+r[2]+1)/2*T; q.y=(r[1]+r[3]+1)/2*T;
 }
 function genPickups(){
   pickups=[];
@@ -2048,7 +2154,7 @@ function upgradeSpell(e){
   const c=[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,e)&&!e.upg[i]).sort(()=>Math.random()-.5); if(!c.length) return false;
   const picks=c.slice(0,2);
   if(e.isPlayer&&!spectating){
-    pendingBless=picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[e.cls][i][1],onPick:p=>applyUpgrade(p,i)}; });
+    pendingBless=picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[e.cls][i][1]+dmgText({...b,...UPG[e.cls][i][0]}),onPick:p=>applyUpgrade(p,i)}; });
     choiceHead=UPG_HEAD; blessHidden=false; updateBlessUI();
   } else applyUpgrade(e,picks[0]);
   return true;
@@ -2220,7 +2326,8 @@ function tryMove1(e,dx,dy){
   if(e.sealUntil>now&&sealBreak(e)) e.y=oy;
 }
 function speedOf(e){
-  const fm=e.form==='wolf'||e.form==='avatar'?((e.formS&&e.formS.spd)||1.3):e.form==='hawk'?1.35:e.form==='bear'?.92:1;
+  const rush=e.hawkRush&&now<e.hawkRush.until?e.hawkRush.mul:0;   // shift-in speed bonus: it REPLACES the form's normal speed, it never stacks on top
+  const fm=e.form==='avatar'?(rush||(e.formS&&e.formS.spd)||1.2):e.form==='wolf'?((e.formS&&e.formS.spd)||1.2):e.form==='hawk'?(rush||1.2):e.form==='bear'?.92:1;
   return e.speed*fm*(1+(e.bSpeed||0))*(now<e.spdUntil?1.3:1)*(now<e.hasteUntil?e.hasteMul:1)*(now<e.slowUntil?e.slowMul:1);
 }
 function moveEnt(e,dt){
@@ -2318,7 +2425,7 @@ function updateEnt(e,dt){
   if(e.tele&&now>=e.tele.at) finishTele(e);
   if((e.form==='hawk'||e.form==='avatar')&&now>=e.formUntil){
     const av=e.form==='avatar', s=e.formS; clearForm(e);
-    if(av){ K.nova(e,{r:s.r,dmg:s.dmg,stun:s.stun,color:s.color}); fxFlash(e.x,e.y,s.r*.6,'#ffffff',.25); addShake(e.x,e.y,12); }   // the Avatar's single finishing nova
+    if(av) fxRing(e.x,e.y,70,s.color,.4);   // the Avatar just ends (no finishing blast)
     else fxRing(e.x,e.y,44,'#e8dcc0',.35);
   }
   if(now<e.regenUntil){ e.hp=Math.min(e.maxHp,e.hp+e.regenDps*dt); if(Math.random()<.25) spark(e.x+rnd(-14,14),e.y+rnd(-6,12),rnd(-8,8),rnd(-70,-30),'#6aff9a',rnd(2,4),.6); }
@@ -3122,8 +3229,10 @@ function renderHUD(){
     if(s.upgraded){ txt('\u2605',r.x+r.w-8,r.y+r.h-26,'bold 14px Consolas,monospace','#ffe27a','right'); }
   }
   if(hov>=0){
-    const s=spellOf(player,hov), r=slotRect(hov), w=270, h=s.upgraded||s.ult?96:64;
-    let tx=clamp(r.x+r.w/2-w/2,8,W-w-8), ty=r.y-h-8;
+    const s=spellOf(player,hov), r=slotRect(hov), w=Math.min(380,W-16);
+    ctx.font='12px Consolas,monospace';
+    const h=34+wrapLines(s.desc,w-20).length*15+8;   // the box grows with the description, so long texts never spill out of it
+    let tx=clamp(r.x+r.w/2-w/2,8,W-w-8), ty=Math.max(8,r.y-h-8);
     ctx.fillStyle='rgba(0,0,0,.9)'; ctx.fillRect(tx,ty,w,h); ctx.strokeStyle=s.color; ctx.lineWidth=2; ctx.strokeRect(tx,ty,w,h);
     txt(`[${keyLabel(player,hov)}] ${s.name}  •  ${s.cd}s`,tx+10,ty+20,'bold 13px Consolas,monospace',s.color,'left',false);
     wrapText(s.desc,tx+10,ty+38,w-20,15);
@@ -3477,7 +3586,7 @@ modeEl.onchange=()=>{
 
 /* ---------- main menu wizard: 1 game mode -> 2 champion -> 3 loadout (-> start) ---------- */
 const MODES=[
-  {v:'tutorial',n:'Tutorial',d:'New here? Learn moving, zooming, vision, attacking, spells and power-ups step by step, then win a practice duel.'},
+  {v:'tutorial',n:'Tutorial',d:'New here? Learn moving, zooming, vision, attacking, spells and power-ups step by step, then win a practice duel. Tip: press F11 for full screen.'},
   {v:'duel',n:'Team Duel (1v1 / 2v2)',d:'Two teams on the Sanctum map: a blessing room with 4 doors, upgrades in the corners and random pickups. Online: pick your team slot.'},
   {v:'dm',n:'Deathmatch',d:'Free-for-all against bots. First to the kill limit wins.'},
   {v:'spec',n:'Spectate',d:'Watch the bots fight each other (no champion needed).'},
@@ -3556,6 +3665,16 @@ function startGame(){
     }
   }
   if(duel){ let k=0; for(const e of ents) if(e!==player) e.team=(k++<tsz-1)?0:1; }   // you + (tsz-1) allies vs tsz enemies
+  if(duel&&!spectating){   // no two heroes on the same team may be the same champion: re-roll duplicate bots
+    const used=[new Set(),new Set()];
+    ents.forEach((e,idx)=>{
+      if(e.isBox) return;
+      if(used[e.team].has(e.cls)){
+        const pool=BOT_KEYS.filter(k=>!used[e.team].has(k)), nk=pool[ri(0,pool.length-1)];
+        const n=makeEnt(e.name,nk,e.color,false); n.team=e.team; ents[idx]=n; used[e.team].add(nk);
+      } else used[e.team].add(e.cls);
+    });
+  }
   respawn(player,true);
   genPickups();
   if(training){
@@ -3608,10 +3727,11 @@ function genMapTutorial(){
   rect(3,18,14,29);  rect(15,22,21,25);  rect(22,17,31,30);  rect(32,22,38,25);      // start room -> lesson room -> corridor
   rect(39,13,58,35);                                                                  // the big training hall
   for(const [x,y] of [[43,17],[43,30],[54,17],[54,30]]) rect(x,y,x+1,y+1,1);          // pillars
-  rect(47,10,50,12); rect(42,3,55,9); rect(39,5,41,7); rect(27,3,38,9);               // item room (north) + upgrade room (north-west)
+  rect(47,10,50,12); rect(42,3,55,9);                                                 // item room (north)
   rect(47,36,50,38); rect(42,39,55,45);                                               // ultimate-reset room (south)
   rect(59,22,61,25); rect(62,17,70,31);                                               // blessing chamber (east)
   rect(56,41,61,43); rect(62,36,76,46);                                               // corridor (sealed during the duel) + 1v1 arena
+  rect(73,15,75,34); rect(71,3,82,14);                                                // north corridor (opened after the duel; row 35 is still wall) + the rival's room
 }
 function tutStations(){
   thirdEyeUntil=0; arenaDuel={active:false,t0:0};
@@ -3619,7 +3739,7 @@ function tutStations(){
   const P=(tx,ty)=>({x:(tx+.5)*T,y:(ty+.5)*T});
   stations=[
     {kind:'item',...P(48.5,6),alive:false,at:Infinity,item:0},
-    {kind:'upgrade',...P(32.5,6),alive:false,at:Infinity,item:0},
+    {kind:'upgrade',...P(40,14),alive:false,at:Infinity,item:0},
     {kind:'ult',...P(48.5,42),alive:false,at:Infinity,item:0},
     {kind:'arena',...P(66.5,41),alive:false,at:Infinity,item:0},
   ];
@@ -3651,9 +3771,48 @@ const tutSlots=()=>[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,player)).sort((a,b)=>key
 const tutSpellItems=()=>tutSlots().map(i=>({t:tutKey(i)+' '+spellOf(player,i).name+(spellOf(player,i).ult?' (ULTIMATE)':''),d:tut.used.has(i)}));
 const tutNear=(x,y,r)=>Math.hypot(player.x-x,player.y-y)<r;
 
+const TUT_BD2={think:2.2,act:.4,gcd:2,err:.35,lead:.3,dmg:.75,basic:.5};
+const TUT_ROOM={x0:71,y0:3,x1:83,y1:15};   // the rival's room, in tiles
+const TUT_HOME={x:77*80,y:4.5*80};   // where the rival waits: the far end of its room, facing the door
+function tutSpawnEnemy(){
+  const pool=BOT_KEYS.filter(k=>k!==player.cls), key=pool[ri(0,pool.length-1)];
+  const b=makeEnt('Rival',key,'hsl('+ri(0,359)+',75%,58%)',false);
+  b.maxHp=Math.round(b.maxHp*.8); b.hp=b.maxHp;
+  b.x=b.px=TUT_HOME.x; b.y=b.py=TUT_HOME.y; b.face=Math.PI/2; b.invulnUntil=now+1.2; tut.botAI=b.ai; b.ai=null;   // it waits, idle, until you enter its room
+  ents.push(b); tut.bot=b; return b;
+}
+function tutOpenPick(){
+  const box=tg('tutCards'); box.innerHTML='';
+  for(const key of CLASS_KEYS){
+    const C=CLASSES[key], el=document.createElement('div'); el.className='card'+(key===player.cls?' sel':'');
+    el.innerHTML='<div class="top"><canvas width="64" height="64"></canvas><div><h3>'+C.name+'</h3><p>HP '+C.hp+' &middot; Speed '+C.speed+'</p></div></div><p>'+C.blurb+'</p>';
+    const c=el.querySelector('canvas').getContext('2d'); c.translate(32,32); drawBody(c,key,C.c,16,-0.5);
+    el.onclick=()=>tutClosePick(key);
+    box.appendChild(el);
+  }
+  tg('tutChars').classList.remove('hidden'); state='tutpick'; cv.style.cursor='default';
+}
+function tutClosePick(key){
+  if(state!=='tutpick') return;
+  tg('tutChars').classList.add('hidden'); state='playing'; cv.style.cursor='none';
+  for(const k in keys) delete keys[k];
+  mouseHeld=false; atkHeld=false;
+  if(key&&key!==player.cls) tutChangeClass(key);
+}
+function tutChangeClass(cls){
+  const old=player; selClass=cls; rebuildKeymap();
+  const p=makeEnt('You',cls,'hsl(130,90%,60%)',true);
+  p.x=p.px=old.x; p.y=p.py=old.y; p.face=old.face; p.kills=old.kills; p.deaths=old.deaths; p.invulnUntil=now+1; p.nextShield=now+3;
+  ents[ents.indexOf(old)]=p; player=p;
+  wards=wards.filter(o=>o.owner!==old); beasts=beasts.filter(o=>o.owner!==old); runes=runes.filter(o=>o.owner!==old); portals=portals.filter(o=>o.owner!==old); seals=seals.filter(o=>o.owner!==old); mines=mines.filter(o=>o.owner!==old);
+  if(tut.bot&&tut.bot.ai){ tut.bot.ai.target=null; tut.bot.ai.lk=null; }
+  visFace=null; tut.f.changed=true;
+  fxRing(p.x,p.y,110,'#d77bff',.7); fxFlash(p.x,p.y,80,'#ffffff',.3); burst(p.x,p.y,'#d77bff',30,280,.7,4);
+  floaters.push({x:p.x,y:p.y-50,v:0,txt:'NEW HERO: '+CLASSES[cls].name.toUpperCase(),t0:now,last:now,col:'#d77bff'});
+}
 const TUT_ALL=[
  { g:1, get title(){ return tutTouch()?'MOVE: THE JOYSTICK':'MOVE: RIGHT-CLICK'; },
-   text:()=>tutTouch()?`Welcome to <b>ARENA</b>! First, walking. Put a finger on empty ground and <b>drag</b>: a joystick appears and your hero walks. Walk into the <b>glowing circle</b> in the next room.`:`Welcome to <b>ARENA</b>! First, walking. <b>Right-click</b> on the ground and your hero walks there (hold the button to keep following the cursor). Walk into the <b>glowing circle</b> in the next room.`,
+   text:()=>(tutTouch()?'':'<span style="color:#ffd24a">&#9654; Tip: press <kbd>F11</kbd> for full screen.</span><br>')+(tutTouch()?`Welcome to <b>ARENA</b>! First, walking. Put a finger on empty ground and <b>drag</b>: a joystick appears and your hero walks. Walk into the <b>glowing circle</b> in the next room.`:`Welcome to <b>ARENA</b>! First, walking. <b>Right-click</b> on the ground and your hero walks there (hold the button to keep following the cursor). Walk into the <b>glowing circle</b> in the next room.`),
    goal:()=>[{x:27*T,y:24*T,r:120,label:'WALK HERE',edge:true}],
    items:()=>(tutTouch()?[]:[{t:'<b>Right-click</b> to walk',d:!!tut.f.rclick}]).concat([{t:'Reach the circle',d:tutNear(27*T,24*T,100)}]),
    tick:()=>{ if(!tutTouch()&&!tut.f.rclick&&tutNear(27*T,24*T,100)) tutNote('You got here without clicking. Walk back out and use the <b>right mouse button</b>.'); },
@@ -3702,7 +3861,7 @@ const TUT_ALL=[
    done:()=>tutSlots().every(i=>tut.used.has(i)) },
  { g:6, title:'SPELLS (ALL 8)',
    init:()=>{ spellCount=8; player.loadout=undefined; player.cd.fill(0); player.offCd=0; },
-   text:()=>`The full mode adds the bottom row ${tutKey(4)} ${tutKey(5)} ${tutKey(6)}: three extra <b>tool spells</b> (utility, control or a heavy hit). You choose your spells in the loadout screen before a match. Your cooldowns have been refilled: <b>use all 8 spells once</b> again.<br><span style="color:#8fb08c">Channels and toggles (like Meditate) are stopped for you automatically.</span>`,
+   text:()=>`The full mode adds the bottom row ${tutKey(4)} ${tutKey(5)} ${tutKey(6)}: three extra <b>tool spells</b> (utility, control or a heavy hit). You choose your spells in the loadout screen before a match. Your cooldowns have been refilled: <b>use all 8 spells once</b> again.<br><span style="color:#8fb08c">Channels and toggles (like Meditate) keep going until you press their key again, and you cannot cast while channeling.</span>`,
    items:tutSpellItems,
    done:()=>tutSlots().every(i=>tut.used.has(i)) },
  { g:7, title:'POWER-UP 1: AN ITEM',
@@ -3724,15 +3883,30 @@ const TUT_ALL=[
    tick:()=>{ if(player.cd[7]>now) tut.f.ultCast=true; const q=tutSt('ult'); if(q.alive&&player.cd[7]<=now&&tutNear(q.x,q.y,90)) tutNote('Your ultimate is ready, so the reset would be wasted. <b>Cast it first</b> ('+keyLabel(player,7)+').'); },
    items:()=>[{t:'<b>Cast your ultimate</b> ('+tutKey(7)+')',d:!!tut.f.ultCast},{t:'Pick up the <b>ult reset</b>',d:!tutSt('ult').alive}],
    done:()=>!tutSt('ult').alive },
+ { g:7, zoomStep:true, title:'POWER-UP 4: LOOK AROUND',
+   init:()=>{ activateStation(tutSt('upgrade')); announce('▲ A SPELL UPGRADE HAS APPEARED ▲'); camFree=false; tut.freeze=true; player.path=[]; },
+   text:()=>`<b>Your hero is frozen until you have moved the camera and recentered it.</b> A <b>SPELL UPGRADE</b> has just appeared in this hall &mdash; but it is off screen. <b>Push your mouse against the edge of the screen</b> to scroll the camera, and look for it (it is in the <b>top-left corner</b> of the hall; the arrow on the screen edge points the way).`,
+   tick:()=>{
+     const q=tutSt('upgrade'), sx=(q.x-cam.x)*SC+W/2, sy=(q.y-cam.y)*SC+H/2;
+     if(camFree&&sx>30&&sx<W-30&&sy>30&&sy<H-30) tut.f.looked=true;
+   },
+   items:()=>[{t:'Move the <b>camera</b> with the mouse at the screen edge',d:!!(camFree||tut.f.looked)},{t:'Bring the upgrade into view',d:!!tut.f.looked}],
+   done:()=>!!tut.f.looked },
+ { g:7, zoomStep:true, title:'POWER-UP 4: RECENTER WITH SPACE',
+   exit:()=>{ tut.freeze=false; },
+   tick:()=>{ if(tut.f.space&&!camFree) tut.freeze=false; },
+   text:()=>`Good eye! Now press <kbd>SPACE</kbd> to snap the camera back onto your hero. Use this whenever you lose track of yourself.`,
+   items:()=>[{t:'Press <kbd>SPACE</kbd> to recenter the camera',d:!!tut.f.space&&!camFree}],
+   done:()=>!!tut.f.space&&!camFree },
  { g:7, title:'POWER-UP 4: SPELL UPGRADE',
-   init:()=>{ activateStation(tutSt('upgrade')); announce('▲ A SPELL UPGRADE HAS APPEARED ▲'); },
-   text:()=>`The <b>SPELL UPGRADE</b> (white arrows, north-west room) makes one of your spells stronger &mdash; more damage, a shorter cooldown or a new effect. Step on it and choose which of the two offered spells to improve. Upgraded spells show a <b>&#9733;</b> on the bar.`,
+   init:()=>{ if(!tutSt('upgrade').alive){ activateStation(tutSt('upgrade')); announce('▲ A SPELL UPGRADE HAS APPEARED ▲'); } },
+   text:()=>`The <b>SPELL UPGRADE</b> (white arrows, in the top-left corner of this hall) makes one of your spells stronger &mdash; more damage, a shorter cooldown or a new effect. Step on it and choose which of the two offered spells to improve. Upgraded spells show a <b>&#9733;</b> on the bar.`,
    goal:()=>{ const q=tutSt('upgrade'); return q.alive?[{x:q.x,y:q.y,r:60,label:'UPGRADE'}]:[]; },
    items:()=>[{t:'Pick up the <b>upgrade</b> and choose a spell',d:Object.keys(player.upg).length>0}],
    done:()=>Object.keys(player.upg).length>0 },
  { g:7, title:'POWER-UP 5: THE 1 vs 1 ARENA',
    init:()=>{ tutMakeBot(); activateStation(tutSt('arena')); announce('⚔ THE 1 vs 1 ARENA IS OPEN ⚔'); tut.f.duelOn=false; },
-   exit:()=>{ if(tut.bot){ tutRemoveEnt(tut.bot); tut.bot=null; } },
+   exit:()=>{ if(tut.bot){ tutRemoveEnt(tut.bot); tut.bot=null; } const q=tutSt('arena'); q.alive=false; q.at=Infinity; },
    text:()=>`The last power-up is an <b>event</b>: the <b>1 vs 1 ARENA</b> (crossed swords, south-east). Step on it and you and another fighter are locked in a sealed arena &mdash; the last one standing wins. Your opponent is an <b>easy practice bot</b>. Use everything you learned: aim, spells, ultimate. <b>Defeat it!</b>`,
    goal:()=>{ const q=tutSt('arena'); return (q.alive&&!arenaDuel.active)?[{x:q.x,y:q.y,r:60,label:'1 vs 1 ARENA',edge:true}]:[]; },
    tick:(dt)=>{
@@ -3749,6 +3923,46 @@ const TUT_ALL=[
    },
    items:()=>[{t:'Step on the arena to start the duel',d:!!tut.f.duelOn||(tut.bot&&tut.bot.dead)},{t:'<b>Defeat</b> the practice bot',d:!!(tut.bot&&tut.bot.dead)}],
    done:()=>!!(tut.bot&&tut.bot.dead) },
+
+ { g:8, panelLeft:true, title:'FINAL TEST: CHANGE HERO AND FIGHT',
+   init:()=>{
+     for(let tx=73;tx<=75;tx++) grid[35*MW+tx]=0;   // the arena's north door opens
+     buildLayers();
+     for(const [x,y] of [[73.9,28.5],[75.1,22],[73.9,18.5]]) tutMakeBox(x*T,y*T,22,150);
+     tut.charSt={x:74.5*T,y:25.5*T}; tut.charArmed=true; tut.kills=0; tut.goal=5; BD=TUT_BD2;
+     tutSpawnEnemy(); announce('★ THE NORTH DOOR HAS OPENED ★');
+   },
+   text:()=>`After the duel the arena's <b>north door</b> opens. In the corridor you find boxes to practise on and the <b>CHARACTER CHANGE</b> power-up (purple pad): step on it to swap to <b>any hero</b> &mdash; as often as you like. At the end waits a rival hero who <b>never leaves its room</b>. Defeat it <b>${tut.goal} times</b> (it comes back as a different hero each time). If you fall, you respawn in the corridor.`,
+   goal:()=>(tut.charSt&&!tut.f.changed)?[{x:tut.charSt.x,y:tut.charSt.y,r:70,label:'CHARACTER CHANGE',edge:true}]:[],
+   tick:()=>{
+     const b=tut.bot, R=TUT_ROOM, q=tutSt('arena'); q.alive=false; q.at=Infinity;
+     if(b&&!b.dead){
+       const x=clamp(b.x,R.x0*T+b.r+4,R.x1*T-b.r-4), y=clamp(b.y,R.y0*T+b.r+4,R.y1*T-b.r-14);   // the rival can never leave its room
+       if(x!==b.x||y!==b.y){ b.x=x; b.y=y; b.path=[]; b.dash=null; }
+       const inRoom=!player.dead&&player.x>=R.x0*T&&player.y<R.y1*T;
+       if(!inRoom){   // you left (or fell): the rival goes back to its spot, fully healed, and waits
+         if(b.ai){ tut.botAI=b.ai; b.ai=null; }
+         b.x=b.px=TUT_HOME.x; b.y=b.py=TUT_HOME.y; b.face=Math.PI/2; b.hp=b.maxHp; b.path=[]; b.dash=null; b.vx=b.vy=0;
+         b.stunUntil=b.slowUntil=b.burnUntil=0; b.invulnUntil=now+.25;
+       } else if(!b.ai&&tut.botAI){ b.ai=tut.botAI; b.ai.target=player; b.ai.lk={x:player.x,y:player.y,vx:player.vx,vy:player.vy,t:now}; }
+       else if(b.ai){ b.ai.target=player; b.ai.lk={x:player.x,y:player.y,vx:player.vx,vy:player.vy,t:now}; }
+     }
+     if(b&&b.dead&&!b.cnt){   // a kill
+       b.cnt=true; tut.kills++; tut.respawnAt=now+2.5;
+       floaters.push({x:player.x,y:player.y-50,v:0,txt:'KILL '+tut.kills+' / '+tut.goal,t0:now,last:now,col:'#ffd24a'});
+     }
+     if(b&&b.cnt&&now>=tut.respawnAt&&tut.kills<tut.goal){ tutRemoveEnt(b); tutSpawnEnemy(); }
+     if(!player.dead&&tut.wasDead){ player.x=player.px=74.5*T; player.y=player.py=33.5*T; player.path=[]; player.face=-Math.PI/2; tutNote('You fell. You respawn in the corridor: change hero if you like, then go back in.'); }
+     // the character-change pad
+     const c=tut.charSt;
+     if(!player.dead&&c){
+       const d=Math.hypot(player.x-c.x,player.y-c.y);
+       if(d>130) tut.charArmed=true;
+       else if(d<55&&tut.charArmed){ tut.charArmed=false; tutOpenPick(); }
+     }
+   },
+   items:()=>[{t:'Kills: <b>'+tut.kills+' / '+tut.goal+'</b>',d:tut.kills>=tut.goal},{t:'Change your hero on the purple pad (as often as you want)',d:!!tut.f.changed}],
+   done:()=>tut.kills>=tut.goal },
 ];
 
 let TUT_STEPS=TUT_ALL;
@@ -3761,8 +3975,8 @@ function tutList(){
 }
 function tutPanel(){
   const s=tut.s; if(!s) return;
-  tg('tut').style.display='block'; tg('tut').className=tut.doneAt?'ok':'';
-  tg('tutLesson').textContent='LESSON '+(s.g-(tutTouch()&&s.g>2?1:0))+' / '+(tutTouch()?6:7);
+  tg('tut').style.display='block'; tg('tut').className=tut.doneAt?'ok':''; document.body.classList.toggle('tutL',!!s.panelLeft);
+  tg('tutLesson').textContent='LESSON '+(s.g-(tutTouch()&&s.g>2?1:0))+' / '+(Math.max(...TUT_STEPS.map(q=>q.g))-(tutTouch()?1:0));
   tg('tutTitle').textContent=s.title;
   tg('tutText').innerHTML=s.text();
   tg('tutBar').innerHTML=TUT_STEPS.map((_,k)=>'<span class="'+(k<tut.i?'dn':k===tut.i?'cur':'')+'"></span>').join('');
@@ -3787,7 +4001,7 @@ function tutDoneFx(){
 }
 function tutTick(dt){
   const s=tut.s; if(!s||!player) return;
-  if(player.medOn){ tut.medT=(tut.medT||0)+dt; if(tut.medT>1.6){ player.medOn=false; tut.medT=0; } } else tut.medT=0;
+  if(player.medOn){ tut.medT=(tut.medT||0)+dt; if(tut.medT>3&&!tut.medHint){ tut.medHint=true; tutNote('You are channeling: you cannot cast or attack until you stop. Press the spell key <b>again</b> to stop.'); } } else { tut.medT=0; tut.medHint=false; }
   if(tut.noClickMove){ player.path=[]; mouseHeld=false; }
   if(tut.doneAt){ if(now-tut.doneAt>=1.6) tutNext(); }
   else {
@@ -3809,13 +4023,14 @@ function tutStart(){
   genMapTutorial(); buildLayers(); tutStations();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
   ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[]; pickups=[];
+  if(!tut.on) tut.origClass=selClass; else { selClass=tut.origClass; rebuildKeymap(); }   // changing hero in the tutorial must not change your menu pick
   player=makeEnt('You',selClass,'hsl(130,90%,60%)',true); ents.push(player);
   player.loadout=loadoutFor(selClass);
   respawn(player,true);
   player.x=player.px=8.5*T; player.y=player.py=23.5*T; player.invulnUntil=0; player.face=0;
   zoom=1; SC=BASE_SC; camFree=false; cam.x=player.x; cam.y=player.y; visFace=null;
   TUT_STEPS=TUT_ALL.filter(q=>!(tutTouch()&&q.zoomStep));
-  tut.on=true; tut.noSpells=true; tut.noClickMove=false; tut.box=null; tut.bot=null; tut.dummies=[]; tut.wasDead=false; tut.s=null;
+  tut.on=true; tut.noSpells=true; tut.noClickMove=false; tut.box=null; tut.bot=null; tut.dummies=[]; tut.wasDead=false; tut.s=null; tut.charSt=null; tut.kills=0; tut.goal=5; tut.freeze=false; tg('tutChars').classList.add('hidden');
   document.body.classList.add('tut');
   document.getElementById('menu').classList.add('hidden'); document.getElementById('over').classList.add('hidden'); tg('tutEnd').classList.add('hidden');
   state='playing';
@@ -3825,12 +4040,17 @@ function tutFinish(){
   state='over'; cv.style.cursor='default'; tg('tut').style.display='none'; tg('tutEnd').classList.remove('hidden');
 }
 function tutCleanup(){
-  tut.on=false; tut.s=null; tut.noSpells=true; tut.noClickMove=false;
-  document.body.classList.remove('tut'); tg('tut').style.display='none'; tg('tutEnd').classList.add('hidden');
+  tut.on=false; tut.s=null; tut.noSpells=true; tut.noClickMove=false; tut.freeze=false;
+  document.body.classList.remove('tut','tutL'); tg('tut').style.display='none'; tg('tut').removeAttribute('data-min'); tg('tut').style.left=tg('tut').style.top=tg('tut').style.right=''; tg('tutEnd').classList.add('hidden');
   pendingBless=null; updateBlessUI(); fogOn=false; training=false; blessing=null;
   spellCount=+document.getElementById('spells').value; BD=BOTDIFF[diffEl.value]||BOTDIFF.normal; killLimit=20;
+  tg('tutChars').classList.add('hidden'); tut.charSt=null;
+  if(tut.origClass){ selClass=tut.origClass; rebuildKeymap(); buildCards(); tut.origClass=null; }
   if(player) player.loadout=undefined;
   cv.style.cursor='default';
+}
+function tutMore(){   // keep fighting for 5 more kills
+  tut.goal+=5; tut.doneAt=0; tg('tutEnd').classList.add('hidden'); state='playing'; cv.style.cursor='none'; tutPanel();
 }
 function tutLeave(page){   // back to the menu (page: 'landing' or 'wizard')
   tutCleanup(); state='menu'; document.getElementById('menu').classList.remove('hidden');
@@ -3841,23 +4061,28 @@ function tutLeave(page){   // back to the menu (page: 'landing' or 'wizard')
 { const _castSpell=castSpell;
   castSpell=function(e,i,tx,ty){
     if(tut.on&&e===player&&tut.noSpells){ tutNote('Spells come in lesson 5. First learn the basics!'); return false; }
+    if(tut.on&&e===player&&tut.freeze){ tutNote('Your hero is frozen: first move the camera with the mouse and recenter it with <b>SPACE</b>.'); return false; }
     const ok=_castSpell(e,i,tx,ty);
     if(ok&&tut.on&&e===player) tut.used.add(i);
     return ok;
   };
   const _update=update;
-  update=function(dt){ _update(dt); if(tut.on&&state==='playing') tutTick(dt); };
+  update=function(dt){
+    if(tut.on&&tut.freeze&&player){ delete keys.arrowleft; delete keys.arrowright; delete keys.arrowup; delete keys.arrowdown; mouseHeld=false; player.path=[]; }
+    _update(dt); if(tut.on&&state==='playing') tutTick(dt);
+  };
   const _render=render;
   render=function(){ _render(); if(tut.on) tutOverlay(); };
 }
 addEventListener('mousedown',ev=>{
   if(!tut.on||state!=='playing'||ev.target!==cv) return;
   if(ev.button===2){
+    if(tut.freeze){ ev.stopImmediatePropagation(); ev.preventDefault(); tutNote('Your hero is frozen: first move the camera with the mouse and recenter it with <b>SPACE</b>.'); return; }
     if(tut.noClickMove){ ev.stopImmediatePropagation(); ev.preventDefault(); tutNote('Click-to-move is off in this exercise. Use the <b>arrow keys</b>!'); return; }
     tut.f.rclick=true;
   }
 },true);
-addEventListener('keydown',ev=>{ if(tut.on&&ev.key.indexOf('Arrow')===0) tut.f.arrows=true; },true);
+addEventListener('keydown',ev=>{ if(!tut.on) return; if(ev.key.indexOf('Arrow')===0){ tut.f.arrows=true; if(tut.freeze) tutNote('Your hero is frozen: first move the camera with the mouse and recenter it with <b>SPACE</b>.'); } else if(ev.key===' ') tut.f.space=true; },true);
 
 /* ---------- world markers drawn on top of the game ---------- */
 function tutEdge(sx,sy,col,label,dist){
@@ -3866,8 +4091,22 @@ function tutEdge(sx,sy,col,label,dist){
   ctx.beginPath(); ctx.moveTo(20,0); ctx.lineTo(-11,-13); ctx.lineTo(-4,0); ctx.lineTo(-11,13); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
   txt(label+'  '+dist,ax,ay+(ay>H/2?-20:34),'bold 12px Consolas,monospace',col,'center');
 }
+function tutDrawPad(){
+  const c=tut.charSt; if(!c) return;
+  const sx=(c.x-cam.x)*SC+W/2, sy=(c.y-cam.y)*SC+H/2; if(sx<-100||sx>W+100||sy<-100||sy>H+100) return;
+  ctx.save(); ctx.translate(sx,sy); ctx.scale(SC,SC);
+  const bob=Math.sin(now*2.4)*4, col='#d77bff';
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(0,14,28,12,0,0,7); ctx.stroke();
+  ctx.fillStyle='rgba(20,10,30,.55)'; ctx.beginPath(); ctx.ellipse(0,14,26,10,0,0,7); ctx.fill();
+  const g=ctx.createRadialGradient(0,bob,0,0,bob,52); g.addColorStop(0,col); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.globalAlpha=.4; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,bob,52,0,7); ctx.fill(); ctx.globalAlpha=1;
+  ctx.translate(0,bob); ctx.lineWidth=4; ctx.lineCap='round'; ctx.strokeStyle='#fff';
+  for(const a0 of [0.4,3.54]){ ctx.beginPath(); ctx.arc(0,0,13,a0,a0+2.4); ctx.stroke(); const ea=a0+2.4, ex=Math.cos(ea)*13, ey=Math.sin(ea)*13; ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex+Math.cos(ea+2.2)*8,ey+Math.sin(ea+2.2)*8); ctx.moveTo(ex,ey); ctx.lineTo(ex+Math.cos(ea+.9)*8,ey+Math.sin(ea+.9)*8); ctx.stroke(); }
+  ctx.restore();
+  txt('CHARACTER CHANGE',sx,sy-52*SC,'bold 12px Consolas,monospace',col,'center');
+}
 function tutOverlay(){
   if(!tut.s||!player||state==='menu') return;
+  tutDrawPad();
   const gl=(!tut.doneAt&&tut.s.goal)?tut.s.goal():[], pulse=.5+.5*Math.sin(now*4);
   for(const g of gl){
     const sx=(g.x-cam.x)*SC+W/2, sy=(g.y-cam.y)*SC+H/2, rr=g.r*SC;
@@ -3880,7 +4119,7 @@ function tutOverlay(){
       ctx.restore(); txt(g.label,sx,by-10,'bold 13px Consolas,monospace','#ffd24a','center');
     } else if(g.edge) tutEdge(sx,sy,'#ffd24a',g.label,Math.round(Math.hypot(g.x-player.x,g.y-player.y)/10));
   }
-  if(!tut.doneAt&&(tut.s.items===tutSpellItems)){   // pulse the spell slots that still have to be cast
+  if(!tut.doneAt&&(tut.s.items===tutSpellItems)&&hudHover()<0){   // pulse the spell slots that still have to be cast
     for(const i of tutSlots()){ if(tut.used.has(i)) continue; const r=slotRect(i);
       ctx.strokeStyle='rgba(255,210,74,'+(.4+.6*pulse)+')'; ctx.lineWidth=3; ctx.strokeRect(r.x-3,r.y-3,r.w+6,r.h+6); }
   }
@@ -3889,7 +4128,16 @@ function tutOverlay(){
 /* ---------- menu wiring ---------- */
 tg('tutExit').onclick=()=>tutLeave('landing');
 tg('tutPlay').onclick=()=>tutLeave('wizard');
-tg('tutMenu').onclick=()=>tutLeave('landing');
+tg('tutMore').onclick=tutMore;
+tg('tutMin').onclick=()=>{ const t=tg('tut'); if(t.hasAttribute('data-min')) t.removeAttribute('data-min'); else t.setAttribute('data-min',''); };
+{ let drag=null;   // drag the panel by its header to put it anywhere on screen
+  tg('tutHead').addEventListener('mousedown',ev=>{ if(ev.target.closest('button')) return; const r=tg('tut').getBoundingClientRect(); drag={dx:ev.clientX-r.left,dy:ev.clientY-r.top}; ev.preventDefault(); });
+  addEventListener('mousemove',ev=>{ if(!drag) return; const t=tg('tut'), r=t.getBoundingClientRect();
+    t.style.right='auto'; t.style.left=clamp(ev.clientX-drag.dx,0,innerWidth-r.width)+'px'; t.style.top=clamp(ev.clientY-drag.dy,0,innerHeight-40)+'px'; });
+  addEventListener('mouseup',()=>{ drag=null; });
+}
+tg('tutKeep').onclick=()=>tutClosePick(null);
+addEventListener('keydown',ev=>{ if(state==='tutpick'&&ev.key==='Escape') tutClosePick(null); });
 tg('tutAgain').onclick=tutStart;
 setInterval(()=>{ if(tut.on&&state==='menu') tutCleanup(); },250);   // the pause menu's "M" also leaves the tutorial
 setTimeout(()=>{
