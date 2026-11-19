@@ -184,6 +184,8 @@ let T = 80, MW = 80, MH = 56;   // T = tile size in pixels. The classic map uses
 let TK = T/40;                   // scale for tile decorations
 let CHX=40*T, CHY=28*T;
 const ARENA={x0:62*T,y0:24*T,x1:72*T,y1:37*T};
+// arena duel config: where the two fighters stand, where bystanders are pushed to, and which doorway tiles are sealed
+let gateRects=[[60,28,61,32]], arenaCfg={spots:[[64.5,30.5],[69.5,30.5]],kick:null};
 function setTile(t,cx=40,cy=28,mw=80,mh=56){ T=t; MW=mw; MH=mh; TK=t/40; CHX=cx*t; CHY=cy*t; ARENA.x0=62*t; ARENA.y0=24*t; ARENA.x1=72*t; ARENA.y1=37*t; }
 let grid, floorC, floorX, wallC;
 
@@ -208,7 +210,7 @@ function lineClear(x0,y0,x1,y1,r){
 }
 
 function genMap(){
-  setTile(80); duelRooms=[];
+  setTile(80); duelRooms=[]; gateRects=[[60,28,61,32]]; arenaCfg={spots:[[64.5,30.5],[69.5,30.5]],kick:null};
   grid=new Uint8Array(MW*MH).fill(1); doors=[];
   const set=(x,y,v)=>{ if(x>0&&y>0&&x<MW-1&&y<MH-1) grid[y*MW+x]=v; };
   const rect=(x0,y0,x1,y1,v=0)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) set(x,y,v); };
@@ -236,7 +238,9 @@ function genMap(){
         and four plain rooms (top, bottom, left, right) where heals / damage / speed pickups spawn at random ---- */
 function genMapDuel(){
   setTile(36,44,34,88,68);
-  ARENA.x0=ARENA.y0=-1e7; ARENA.x1=ARENA.y1=-1e7+1;   // no arena duel in this map
+  // the bottom-right corner room doubles as the 1v1 arena: its two doorways are sealed during a duel
+  ARENA.x0=64*T; ARENA.y0=48*T; ARENA.x1=86*T; ARENA.y1=66*T;
+  gateRects=[[62,54,63,59],[72,46,77,47]]; arenaCfg={spots:[[68.5,56.5],[81.5,56.5]],kick:[56,56.5]};
   grid=new Uint8Array(MW*MH).fill(1); doors=[];
   const set=(x,y,v)=>{ if(x>0&&y>0&&x<MW-1&&y<MH-1) grid[y*MW+x]=v; };
   const rect=(x0,y0,x1,y1,v=0)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) set(x,y,v); };
@@ -742,7 +746,7 @@ function fxCone(x,y,a,arc,r,color){ effects.push({t:'cone',x,y,a,arc,r,color,t0:
 function fxTrail(x0,y0,x1,y1,color){ effects.push({t:'trail',x0,y0,x1,y1,color,t0:now,dur:.3}); }
 function fxSlash(x,y,a,arc,r,color,dur=.2,dir=1){ effects.push({t:'slash',x,y,a,arc,r,color,t0:now,dur,dir}); }
 function fxFlash(x,y,r,color,dur=.15){ effects.push({t:'flash',x,y,r,color,t0:now,dur}); }
-function spark(x,y,vx,vy,col,sz,life){ parts.push({x,y,vx,vy,t0:now,life,col,sz,c:true}); }
+function spark(x,y,vx,vy,col,sz,life,buff){ parts.push({x,y,vx,vy,t0:now,life,col,sz,c:true,buff:!!buff}); }   // buff=true: speed/damage buff particles, hidden in the fog of war
 function burst(x,y,col,n=8,sp=140,life=.4,sz=3){
   for(let i=0;i<n;i++){ const a=rnd(0,6.28), v=rnd(sp*.4,sp);
     parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t0:now,life:life*rnd(.7,1.2),col,sz:rnd(sz*.6,sz),c:true}); }
@@ -1905,7 +1909,7 @@ function placePickup(q){
 function genPickups(){
   pickups=[];
   if(teamMode){
-    for(const type of ['health','health','heal_s','heal_s','damage','damage','speed','speed']){ const q={x:0,y:0,type,alive:true,respawnAt:0,rand:true}; placePickup(q); pickups.push(q); }
+    for(const type of ['health','health','heal_s','heal_s','damage','damage','speed','speed','plate','plate','plate','plate']){ const q={x:0,y:0,type,alive:true,respawnAt:0,rand:true}; placePickup(q); pickups.push(q); }
     return;
   }
   [['health',45],['damage',135],['armor',225],['speed',315]].forEach(([type,deg])=>{
@@ -2009,7 +2013,7 @@ function upgradeSpell(e){
   const c=[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,e)&&!e.upg[i]).sort(()=>Math.random()-.5); if(!c.length) return false;
   const picks=c.slice(0,2);
   if(e.isPlayer&&!spectating){
-    pendingBless=picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+b.k+']',col:'#e8f0ff',desc:UPG[e.cls][i][1],onPick:p=>applyUpgrade(p,i)}; });
+    pendingBless=picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[e.cls][i][1],onPick:p=>applyUpgrade(p,i)}; });
     choiceHead=UPG_HEAD; blessHidden=false; updateBlessUI();
   } else applyUpgrade(e,picks[0]);
   return true;
@@ -2022,7 +2026,7 @@ function genStations(){
     stations=[
       {kind:'upgrade',...P(12,11),alive:false,at:Infinity,item:0},
       {kind:'item',...P(12,57),alive:false,at:Infinity,item:0},
-      {kind:'vision',...P(75,57),alive:false,at:now+60,item:0},
+      {kind:'vision',flip:true,nextKind:'vision',...P(75,57),alive:false,at:Infinity,item:0},
       {kind:'ult',...P(75,11),alive:false,at:Infinity,item:0},
     ];
     return;
@@ -2036,15 +2040,22 @@ function genStations(){
   ];
 }
 function startDuel(a){
-  const cand=ents.filter(o=>o!==a&&!o.dead&&!o.isBox); if(!cand.length) return false;
-  const b=cand[ri(0,cand.length-1)];
-  [[a,64.5*T,30.5*T],[b,69.5*T,30.5*T]].forEach(([e,x,y])=>{
+  const cand=ents.filter(o=>o!==a&&!o.dead&&!o.isBox&&!sameTeam(a,o)); if(!cand.length) return false;
+  const b=cand[ri(0,cand.length-1)], sp=arenaCfg.spots;
+  [[a,sp[0][0]*T,sp[0][1]*T],[b,sp[1][0]*T,sp[1][1]*T]].forEach(([e,x,y])=>{
     burst(e.x,e.y,'#ff4040',20,240,.5,4);
     e.x=e.px=x; e.y=e.py=y; e.path=[]; e.dash=null; e.invulnUntil=now+1.2; e.stunUntil=0; e.target=null;
     if(e.isPlayer){ cam.x=x; cam.y=y; }
     burst(x,y,'#ff4040',20,240,.5,4); fxRing(x,y,70,'#ff4040',.5);
   });
-  for(const o of ents){ if(o===a||o===b||o.dead) continue; if(o.x>=60*T-24&&o.x<=62*T+24&&o.y>=28*T-24&&o.y<=33*T+24){ o.x=57.5*T; o.path=[]; } }
+  for(const o of ents){   // everyone else leaves the arena and the doorways that are about to be sealed
+    if(o===a||o===b||o.dead) continue;
+    const inRoom=arenaCfg.kick&&o.x>=ARENA.x0&&o.x<=ARENA.x1&&o.y>=ARENA.y0&&o.y<=ARENA.y1;
+    const inGate=gateRects.some(([x0,y0,x1,y1])=>o.x>=x0*T-24&&o.x<=(x1+1)*T+24&&o.y>=y0*T-24&&o.y<=(y1+1)*T+24);
+    if(!inRoom&&!inGate) continue;
+    if(arenaCfg.kick){ o.x=o.px=arenaCfg.kick[0]*T; o.y=o.py=arenaCfg.kick[1]*T; } else o.x=57.5*T;
+    o.path=[]; o.dash=null;
+  }
   setGate(true); arenaDuel={active:true,t0:now}; addShake(a.x,a.y,10);
   announce('\u2694 DUEL! '+(a.isPlayer?'You':a.name)+' vs '+(b.isPlayer?'You':b.name)+' \u2014 last one standing leaves the arena \u2694');
   return true;
@@ -2055,7 +2066,7 @@ function updateDuel(){
   for(const e of ents){ if(e.dead||e.isBox) continue; if(e.x>=ARENA.x0&&e.x<=ARENA.x1&&e.y>=ARENA.y0&&e.y<=ARENA.y1){ alive++; last=e; } }
   if((alive<=1&&now>arenaDuel.t0+1.5)||now>arenaDuel.t0+100){
     setGate(false); arenaDuel.active=false;
-    const st=stations.find(q=>q.kind==='arena'); if(st){ st.alive=false; st.at=now+60; }
+    const st=stations.find(q=>q.kind==='arena'); if(st){ st.alive=false; st.at=st.flip?Infinity:now+60; }
     announce('\u2694 THE ARENA OPENS'+(last?' \u2014 '+(last.isPlayer?'you':last.name)+' survived':'')+' \u2694');
   }
 }
@@ -2069,9 +2080,17 @@ function activateStation(st){
   burst(st.x,st.y,KCOL[st.kind],30,300,.8,4); addShake(st.x,st.y,3);
 }
 // Blessing alone at 30s, then two random power-ups 15s later; repeats every 60s. Both are announced 5s early and pointed at.
+// Team Duel map: the bottom-right station appears with the blessing AND with the item/upgrade/ult pair (never announced),
+// each time randomly as a Third Eye or a 1v1 arena
+function activateFlip(){
+  const fl=stations.find(q=>q.flip);
+  if(!fl||arenaDuel.active) return;
+  fl.kind=Math.random()<.5?'vision':'arena'; fl.alive=true; fl.at=Infinity;
+  burst(fl.x,fl.y,fl.kind==='arena'?'#ff5a4a':'#6fb7ff',30,300,.8,4);
+}
 function updateSchedule(){
   if(!sched.wb&&now>=sched.bless-5){ sched.wb=true; if(!blessing||!blessing.alive) announce('\u2726 A BLESSING appears in the central chamber in 5s \u2726'); }
-  if(now>=sched.bless){ sched.bless+=60; sched.wb=false; if(!blessing||!blessing.alive) spawnBlessing(); }
+  if(now>=sched.bless){ sched.bless+=60; sched.wb=false; if(!blessing||!blessing.alive) spawnBlessing(); activateFlip(); }
   if(!sched.kinds&&now>=sched.pair-5){
     const all=['item','upgrade','ult']; all.sort(()=>Math.random()-.5); sched.kinds=all.slice(0,2);
     announce('\u25C6 '+sched.kinds.map(k=>KLAB[k]).join(' + ')+' appear in 5s ('+sched.kinds.map(k=>KWHERE[k]).join(' / ')+') \u25C6');
@@ -2080,6 +2099,7 @@ function updateSchedule(){
     const ks=sched.kinds; sched.kinds=null; sched.pair+=60;
     for(const k of ks){ const st=stations.find(q=>q.kind===k); if(st) activateStation(st); }
     announce('\u25C6 '+ks.map(k=>KLAB[k]).join(' + ')+' HAVE APPEARED \u25C6');
+    activateFlip();
   }
 }
 function pointerList(){
@@ -2117,7 +2137,7 @@ function updateStations(){
       if(st.kind==='upgrade'){ if(!upgradeSpell(e)) continue; st.alive=false; break; }
       if(st.kind==='ult'){ if(e.cd[7]<=now&&!e.recastUntil) continue; e.cd[7]=now; e.recastUntil=0; st.alive=false; fxRing(e.x,e.y,90,'#ffb020',.6); fxFlash(e.x,e.y,70,'#fff0b0',.3); burst(e.x,e.y,'#ffb020',26,260,.7,4); if(e.isPlayer) floaters.push({x:e.x,y:e.y-38,v:0,txt:'ULTIMATE READY',t0:now,last:now,col:'#ffb020'}); break; }
       if(st.kind==='item'){ takeItem(e,st.opts||[st.item,(st.item+1)%ITEMS.length]); st.alive=false; break; }
-      if(st.kind==='vision'){ thirdEyeUntil=now+14; announce('\u25C9 THE THIRD EYE OPENS \u2014 NO FOG OF WAR FOR ALL \u25C9'); st.alive=false; st.at=now+60; burst(st.x,st.y,'#6fb7ff',30,300,.8,4); break; }
+      if(st.kind==='vision'){ thirdEyeUntil=now+14; announce('\u25C9 THE THIRD EYE OPENS \u2014 NO FOG OF WAR FOR ALL \u25C9'); st.alive=false; st.at=st.flip?Infinity:now+60; burst(st.x,st.y,'#6fb7ff',30,300,.8,4); break; }
       if(st.kind==='arena'){ if(startDuel(e)){ st.alive=false; } break; }
     }
   }
@@ -2243,6 +2263,15 @@ function updateBeasts(dt){
     beastMove(b,dt,o,!!t);
   }
 }
+// damage-buff particles on the hero: a dense stream of bright embers so everybody can see who is empowered
+function dmgBuffFx(e,dt){
+  if(e.dead||e.isBox||!(now<e.dmgUntil)) return;
+  let n=dt*60*1.6; n=Math.floor(n)+(Math.random()<n%1?1:0);   // about 1.6 embers per frame at 60fps
+  for(let i=0;i<n;i++){
+    const a=rnd(0,6.283), r=rnd(0,e.r*1.05), c=['#ff2a1a','#ff5a2a','#ff9a3a','#ffd24a'][ri(0,3)];
+    spark(e.x+Math.cos(a)*r,e.y+Math.sin(a)*r*.8,rnd(-18,18),rnd(-150,-70),c,rnd(3.5,6.5),rnd(.6,1),true);
+  }
+}
 function updateEnt(e,dt){
   if(e.isBox){
     if(e.dead){ if(now>=e.respawnAt){ e.dead=false; e.hp=e.maxHp; e.invulnUntil=now+.5; e.burnUntil=e.stunUntil=e.slowUntil=0; e.fl=null; } return; }
@@ -2294,8 +2323,8 @@ function updateEnt(e,dt){
   if(e.ai&&now<e.blockUntil&&e.ai.target&&!e.ai.target.dead) e.face=Math.atan2(e.ai.target.y-e.y,e.ai.target.x-e.x);
   if(dt>0){ e.vx=(e.x-e.px)/dt; e.vy=(e.y-e.py)/dt; }
   if(Math.hypot(e.vx,e.vy)>60&&(now<e.spdUntil||(now<e.hasteUntil&&e.hasteMul>1.2))&&Math.random()<.4)
-    spark(e.x-Math.cos(e.face)*12+rnd(-8,8),e.y-Math.sin(e.face)*12+rnd(-8,8),0,0,'#ffd84a',3,.25);
-  if(now<e.dmgUntil&&Math.random()<.2) spark(e.x+rnd(-12,12),e.y+rnd(-6,10),rnd(-10,10),rnd(-70,-30),'#ff4a4a',rnd(2,4),.5);
+    spark(e.x-Math.cos(e.face)*12+rnd(-8,8),e.y-Math.sin(e.face)*12+rnd(-8,8),0,0,'#ffd84a',3,.25,true);
+  dmgBuffFx(e,dt);
   if(now<e.armorUntil&&Math.random()<.1) spark(e.x+rnd(-14,14),e.y+rnd(-6,10),rnd(-10,10),rnd(-50,-20),'#b8c8d8',rnd(2,3),.5);
   e.px=e.x; e.py=e.y;
 }
@@ -2585,14 +2614,16 @@ function drawDoors(){
 }
 function drawGate(){
   if(!arenaDuel.active) return;
-  const x=60*T,y=28*T,w=2*T,h=5*T;
-  const g=ctx.createLinearGradient(x,0,x+w,0); g.addColorStop(0,'rgba(255,40,40,.55)'); g.addColorStop(1,'rgba(255,120,60,.25)');
-  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle='rgba(255,90,60,.9)'; ctx.lineWidth=2;
-  for(let i=0;i<10;i++){ const yy=y+((i*h/10+now*40)%h); ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+w,yy); ctx.stroke(); }
-  ctx.strokeRect(x,y,w,h);
+  for(const [x0,y0,x1,y1] of gateRects){
+    const x=x0*T,y=y0*T,w=(x1-x0+1)*T,h=(y1-y0+1)*T;
+    const g=ctx.createLinearGradient(x,0,x+w,0); g.addColorStop(0,'rgba(255,40,40,.55)'); g.addColorStop(1,'rgba(255,120,60,.25)');
+    ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle='rgba(255,90,60,.9)'; ctx.lineWidth=2;
+    for(let i=0;i<10;i++){ const yy=y+((i*h/10+now*40)%h); ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+w,yy); ctx.stroke(); }
+    ctx.strokeRect(x,y,w,h);
+  }
 }
-function setGate(on){ for(let ty=28;ty<=32;ty++) for(let tx=60;tx<=61;tx++) grid[ty*MW+tx]=on?5:0; }
+function setGate(on){ for(const [x0,y0,x1,y1] of gateRects) for(let ty=y0;ty<=y1;ty++) for(let tx=x0;tx<=x1;tx++) grid[ty*MW+tx]=on?5:0; }
 function overlapsDoor(d){
   const x=d.x*T,y=d.y*T,w=d.w*T,h=d.h*T;
   for(const e of ents){ if(e.dead||e.isBox) continue; if(Math.hypot(e.x-clamp(e.x,x,x+w),e.y-clamp(e.y,y,y+h))<e.r+2) return true; }
@@ -2917,7 +2948,7 @@ function renderWorld(){
   }
   // projectiles
   for(const p of projectiles) drawProj(p);
-  for(const p of parts) drawPart(p);
+  for(const p of parts){ if(p.buff&&fogOn&&!visiblePt(p.x,p.y,0)) continue; drawPart(p); }   // buff particles never give away a hero hidden by the fog
   ctx.globalAlpha=1;
   for(const f of floaters){
     const age=now-f.t0; ctx.globalAlpha=1-age; ctx.font='bold 14px Consolas,monospace'; ctx.textAlign='center';
@@ -2928,9 +2959,16 @@ function renderWorld(){
 }
 
 /* ---------- HUD ---------- */
+// the spell bar is ordered by the keys you bound (Q W E R A S D first, the ultimate last); other keys keep spell order
+function slotPos(i){
+  if(i===7) return {row:1,col:3};
+  const keys=(player&&player.isPlayer&&!spectating&&player.cls===selClass&&bindCache)?bindCache:CLASSES[(player||{cls:selClass}).cls].spells.map(sp=>sp.k.toLowerCase());
+  const rank=j=>{ const r='qwerasd'.indexOf(keys[j]); return r<0?100+j:r; };
+  const act=[0,1,2,3,4,5,6].filter(j=>slotOn(j,player)).sort((a,b)=>rank(a)-rank(b)), p=act.indexOf(i);
+  return {row:Math.floor(Math.max(0,p)/4),col:Math.max(0,p)%4};
+}
 function slotRect(i){
-  let row=i<4?0:1, col=i%4;
-  if(player&&player.loadout&&i!==7){ row=0; col=player.loadout.filter(x=>x!==3).sort((x,y)=>x-y).concat(3).indexOf(i); }
+  const {row,col}=slotPos(i);
   const sw=Math.round(Math.min(76,Math.max(56,W*.085))), sh=Math.round(sw*.72), gap=6, tot=4*sw+3*gap, rows=2;
   return {x:W-tot-12+col*(sw+gap), y:H-12-rows*sh-(rows-1)*gap+row*(sh+gap), w:sw, h:sh};
 }
@@ -3152,7 +3190,7 @@ function renderBoard(sorted){
     else txt('—',itemX,y+27,'12px Consolas,monospace','#566','left',false);
     const bl=(e.blessInfo||[]).map(b=>({t:'★ '+b.name,col:b.col,tip:{title:b.name,desc:b.desc,col:b.col}}));
     if(bl.length) flowChips(bl,bX,y+3,half); else txt('—',bX,y+27,'12px Consolas,monospace','#566','left',false);
-    const ug=[]; for(let i=0;i<8;i++) if(e.upg&&e.upg[i]){ const s=spellOf(e,i); ug.push({t:'▲ '+s.k+' '+CLASSES[e.cls].spells[i].name,col:'#e8f0ff',tip:{title:CLASSES[e.cls].spells[i].name+'+',desc:UPG[e.cls][i][1]+'  (base: '+CLASSES[e.cls].spells[i].desc+')',col:'#e8f0ff'}}); }
+    const ug=[]; for(let i=0;i<8;i++) if(e.upg&&e.upg[i]){ const s=spellOf(e,i); ug.push({t:'▲ '+keyLabel(e,i)+' '+CLASSES[e.cls].spells[i].name,col:'#e8f0ff',tip:{title:CLASSES[e.cls].spells[i].name+'+',desc:UPG[e.cls][i][1]+'  (base: '+CLASSES[e.cls].spells[i].desc+')',col:'#e8f0ff'}}); }
     if(ug.length) flowChips(ug,uX,y+3,half); else txt('—',uX,y+27,'12px Consolas,monospace','#566','left',false);
     ctx.globalAlpha=1; y+=rh;
   });
@@ -3221,10 +3259,12 @@ function bindsFor(cls){
   return saved;
 }
 function saveBinds(cls,arr){ memBinds[cls]=arr; }
+const keyRank=(cls,i)=>{ if(i===7) return 99; const r='qwerasd'.indexOf(bindsFor(cls)[i]); return r<0?50+i:r; };   // Q W E R A S D order, ultimate last
 let bindCache=null;
 function rebuildKeymap(){ KEYMAP={}; bindCache=bindsFor(selClass); bindCache.forEach((k,i)=>{ KEYMAP[k]=i; }); }
 function keyLabel(e,i){
   if(e&&e.isPlayer&&!spectating&&e.cls===selClass){ const k=(bindCache||bindsFor(selClass))[i]; return k.length===1?k.toUpperCase():k.replace(/^arrow/,'').toUpperCase(); }
+  if(e&&e.kbinds&&e.kbinds[i]) return String(e.kbinds[i]).toUpperCase();   // another player's bindings (online)
   return CLASSES[e.cls].spells[i].k;
 }
 function loadoutFor(cls){
@@ -3274,7 +3314,8 @@ function renderLoadout(){
   document.getElementById('loHero').textContent=C.name+' — '+(n8?'all 8 spells are available; set their keys.':'the ultimate and your R spell are always included; pick 3 more of the other 6, then set the keys.');
   document.getElementById('loSteps').innerHTML=(n8?'':'<span class="step'+(loStep===1?' on':'')+'">1 &middot; CHOOSE SPELLS ('+loPick.length+'/4)</span>')+'<span class="step'+(loStep===2?' on':'')+'">'+(n8?'':'2 &middot; ')+'KEY BINDINGS</span>';
   grid.innerHTML=''; msg.textContent='';
-  C.spells.forEach((sp,i)=>{
+  const order=[...C.spells.keys()]; if(loStep===2) order.sort((a,b)=>keyRank(selClass,a)-keyRank(selClass,b));   // key bindings page: Q W E R first
+  order.forEach(i=>{ const sp=C.spells[i];
     const ult=i===7, lock=ult||(!n8&&i===3), chosen=n8||lock||loPick.includes(i);
     if(loStep===2&&!chosen) return;
     const el=document.createElement('div'); el.className='sc'+(ult?' ultc':'')+(loStep===1?(chosen?' sel':' off'):(bindWait===i?' wait':''));
@@ -3419,7 +3460,7 @@ function buildCards(){
     const C=CLASSES[key], el=document.createElement('div');
     el.className='card'+(key===selClass?' sel':'');
     el.innerHTML=`<div class="top"><canvas width="84" height="84"></canvas><div><h3>${C.name}</h3><p>${C.blurb}</p><p>HP ${C.hp} &middot; Speed ${C.speed}</p></div></div>
-      <ul>${C.spells.map((s,i)=>`<li class="${(document.getElementById('spells').value==='8'||i===7||loadoutFor(key).includes(i))?'':'dim'}" title="${s.desc}"><b>${bindsFor(key)[i].toUpperCase()}</b>${s.name}</li>`).join('')}</ul>`;
+      <ul>${[...C.spells.keys()].sort((a,b)=>keyRank(key,a)-keyRank(key,b)).map(i=>{ const s=C.spells[i]; return `<li class="${(document.getElementById('spells').value==='8'||i===7||loadoutFor(key).includes(i))?'':'dim'}" title="${s.desc}"><b>${bindsFor(key)[i].toUpperCase()}</b>${s.name}</li>`; }).join('')}</ul>`;
     const c=el.querySelector('canvas').getContext('2d');
     c.translate(42,42); drawBody(c,key,C.c,20,-0.5);
     el.onclick=()=>{ selClass=key; bindWait=-1; buildCards(); };
@@ -3479,7 +3520,11 @@ function showScreen(name){
   if(name==='mp'&&typeof mpEnter==='function') mpEnter();
 }
 document.getElementById('lSingle').onclick=()=>{ if(typeof netDisconnect==='function') netDisconnect(); goStep(1); };
-document.getElementById('lMulti').onclick=()=>{ location.href='/?mp=1'; };   // the online page replaces this handler
+document.getElementById('lMulti').onclick=()=>{   // the online page replaces this handler
+  // hosted on GitHub Pages the game lives in a sub-folder (/arena/play/...), so go to the sibling multiplayer page, never to the domain root
+  const m=location.pathname.match(/^(.*)\/play\/(?:(?:desktop|mobile)\/)?(?:index\.html)?$/);
+  location.href=m?m[1]+'/multiplayer/play/?mp=1':'/?mp=1';
+};
 function goStep(n){
   wStep=n; showScreen('wiz');
   document.getElementById('st1').style.display=n===1?'':'none';
