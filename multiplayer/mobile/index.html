@@ -111,6 +111,14 @@
   .bcard h4{margin:0 0 4px;color:#ffd24a;font-size:14px}
   .bcard p{margin:0;font-size:12px;color:#cdb}
   .bcard .k{float:right;color:#fff;background:#7a6420;border-radius:3px;padding:0 6px;font-size:12px}
+  .bcard.leg{background:#241406;animation:legp 1.6s ease-in-out infinite}
+  @keyframes legp{0%,100%{box-shadow:0 0 6px #ff9a2a}50%{box-shadow:0 0 18px #ffcf5a}}
+  #heroSw{display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(24,14,4,.92);border:2px solid #ff9a2a;border-radius:6px;padding:4px 8px;gap:5px;align-items:center}
+  #heroSw .lbl{color:#ff9a2a;font-size:10px;line-height:12px;letter-spacing:1px;margin-right:4px;text-align:center}
+  #heroSw .hb{width:44px;height:44px;border:2px solid #6a4a18;border-radius:5px;background:#17120a;cursor:pointer;box-sizing:border-box}
+  #heroSw .hb:hover{border-color:#fff}
+  #heroSw .hb.cur{border-color:#ffd24a;background:#43300a}
+  #heroSw canvas{display:block;pointer-events:none}
   #blessChip{display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:4;background:rgba(24,18,4,.93);border:2px solid #d4a72c;border-radius:6px;padding:6px 14px;color:#ffd24a;font-size:13px}
   .help{margin-top:12px;font-size:12px;color:#7a9a78;line-height:1.6}
   .help b{color:#cfe}
@@ -227,6 +235,7 @@
   <div id="bcards"></div>
 </div>
 <div id="blessChip">&#9733; Blessing available &mdash; press <b>H</b></div>
+<div id="heroSw"></div>
 
 <div id="tut">
   <div class="tl" id="tutHead" title="Drag to move this panel"><span id="tutLesson"></span><span><button id="tutMin" title="Show / hide the explanation">&#8211;</button><button id="tutExit">EXIT TUTORIAL</button></span></div>
@@ -612,6 +621,7 @@ const UPG={
   runekeeper:[[{dur:36,max:10,cd:2.5},'Runes last 36s; keep up to 10.'],[{cd:0},'No cooldown.'],[{ext:22,cd:4},'+22s and a shorter cooldown.'],[{mult:2,rs:1.5,cd:7},'Much bigger and harder detonation.'],[{double:true,cd:5},'Every rune fires two bolts.'],[{chan:.75,cd:9},'Only a 0.75s channel, shorter cooldown.'],[{count:2,cd:3.5},'Throw two runes at once.'],[{dur:12,cd:50},'Lasts 12s, shorter cooldown.']],
 };
 function spellOf(e,i){
+  if(i>=8) return e.xs[i-8];   // Unlimited Knowledge: borrowed spells live in e.xs
   let b=CLASSES[e.cls].spells[i];
   if(b.kind==='runeswap') b={...b,name:RUNES[e.runeSel|0].name};
   if(e.upg&&e.upg[i]){ const u=UPG[e.cls][i], m={...b,...u[0]}; return {...m,name:b.name+'+',desc:'UPGRADED: '+u[1]+dmgText(m),upgraded:true}; }
@@ -1715,7 +1725,7 @@ const K={
   },
   leap(e,s,a,tx,ty){
     const p=clampTo(e,tx,ty,s.dist);
-    if(fogOn&&!spectating&&(e===player?visiblePt(p.x,p.y,0):entSees(e,p.x,p.y))){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }   // also for remote players on the host: it works out THEIR vision
+    if(fogOn&&!spectating&&!eyeOn(e)&&(e===player?visiblePt(p.x,p.y,0):entSees(e,p.x,p.y))){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'you can see that place!',t0:now,last:now,col:'#ff6a9a'}); return false; }   // also for remote players on the host: it works out THEIR vision
     K.blink(e,s,a,tx,ty);
     addShake(e.x,e.y,10);
   },
@@ -1843,11 +1853,11 @@ function dmgText(s){
 }
 for(const c of CLASS_KEYS) for(const sp of CLASSES[c].spells) sp.desc+=dmgText(sp);
 function basicOf(e){ if(e.cls==='wildshaper'&&e.form) return WILD_BASIC[e.form]; return (e.cls==='paladin'&&now<e.ascendUntil)?ASC_BASIC:CLASSES[e.cls].basic; }
-const slotOn=(i,e)=>{ if(tut.on&&tut.noSpells&&e&&e.isPlayer) return false; if(e&&e.loadout) return i===7||e.loadout.includes(i); return spellCount>=8||i<4||i===7; };   // e.loadout = the player's own 5-spell picks
+const slotOn=(i,e)=>{ if(tut.on&&tut.noSpells&&e&&e.isPlayer) return false; if(i>=8) return !!(e&&e.xs&&e.xs[i-8]); if(e&&e.loadout) return i===7||e.loadout.includes(i); return spellCount>=8||i<4||i===7; };   // e.loadout = the player's own 5-spell picks
 function castSpell(e,i,tx,ty){
   if(!slotOn(i,e)||e.dead||now<e.stunUntil||now<e.fearUntil||e.dash||now<e.cd[i]) return false;
   let s=spellOf(e,i), fort=false, fwas=false;
-  if(now<e.fortuneUntil&&s.kind!=='fortune'){ fort=true; fwas=!!s.upgraded; if(!fwas){ const u=UPG[e.cls]&&UPG[e.cls][i]; if(u) s={...CLASSES[e.cls].spells[i],...u[0],name:CLASSES[e.cls].spells[i].name+'+',desc:'FORTUNE: '+u[1],upgraded:true}; } }
+  if(i<8&&now<e.fortuneUntil&&s.kind!=='fortune'){ fort=true; fwas=!!s.upgraded; if(!fwas){ const u=UPG[e.cls]&&UPG[e.cls][i]; if(u) s={...CLASSES[e.cls].spells[i],...u[0],name:CLASSES[e.cls].spells[i].name+'+',desc:'FORTUNE: '+u[1],upgraded:true}; } }
   if(e.medOn&&s.kind!=='channel') return false;
   if(s.cost&&e.hp<=s.cost+30) return false;
   if(s.off&&now<e.offCd) return false;
@@ -1942,8 +1952,9 @@ function visCalc(e,R,T,st){
 // Team Duel: you see through your living allies' eyes too
 const allyVisMap=new WeakMap(); let allyVis=[];
 // does hero e (or an ally of it) see the point? Used for heroes the local screen does not belong to (remote players on the host)
+const eyeOn=e=>!!(e&&e.bEye>0);   // Eye of Agamotto: no fog of war for its holder
 function entSees(e,x,y,r=0){
-  if(now<thirdEyeUntil) return true;
+  if(now<thirdEyeUntil||eyeOn(e)) return true;
   for(const w of wards) if((w.owner===e||sameTeam(w.owner,e))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
   const eyes=[e]; if(teamMode) for(const o of ents) if(o!==e&&!o.dead&&!o.isBox&&o.team===e.team) eyes.push(o);
   for(const o of eyes){
@@ -1969,7 +1980,7 @@ function computeVision(){
 }
 function lineClearPt(x,y,c,sn,len){ for(let l=8;l<=len;l+=8) if(solidAt(x+c*l,y+sn*l)) return false; return true; }
 function visiblePt(x,y,r=0){
-  if(now<thirdEyeUntil) return true;
+  if(now<thirdEyeUntil||eyeOn(player)) return true;
   for(const w of wards) if((w.owner===player||sameTeam(w.owner,player))&&Math.hypot(x-w.x,y-w.y)<=w.r+r) return true;
   for(const a of allyVis){   // an ally sees it
     const ax=x-a.e.x, ay=y-a.e.y, ad=Math.hypot(ax,ay);
@@ -1984,10 +1995,10 @@ function visiblePt(x,y,r=0){
 function chamberHidden(){
   if(!player||!doors.length||teamMode) return false;
   const d=doors[0];
-  return now>=thirdEyeUntil&&!d.open&&d.pos<.02&&!(Math.abs(player.x-CHX)<6*T&&Math.abs(player.y-CHY)<6*T);
+  return now>=thirdEyeUntil&&!eyeOn(player)&&!d.open&&d.pos<.02&&!(Math.abs(player.x-CHX)<6*T&&Math.abs(player.y-CHY)<6*T);
 }
 function renderFog(){
-  if(W<2||H<2||now<thirdEyeUntil) return;
+  if(W<2||H<2||now<thirdEyeUntil||eyeOn(player)) return;
   if(!fogC||fogC.width!==W||fogC.height!==H){ fogC=document.createElement('canvas'); fogC.width=W; fogC.height=H; fogX=fogC.getContext('2d'); }
   fogX.globalCompositeOperation='source-over'; fogX.filter='none'; fogX.clearRect(0,0,W,H);
   fogX.fillStyle='rgba(8,6,16,.58)'; fogX.fillRect(0,0,W,H);
@@ -2035,21 +2046,92 @@ const BLESS=[
   {name:'Frostbite',desc:m=>`Your hits slow enemies by ${pc(.2,m)}.`,apply:(e,m)=>{ e.bSlowHit+=.2*m; }},
   {name:'Pyromania',desc:m=>`Your hits ignite enemies for ${Math.round(6*m)} damage per second.`,apply:(e,m)=>{ e.bBurn+=6*m; }},
 ];
+// LEGENDARY blessings: very rare (about 3.5% per offered card), never offered twice, never given to bots
+let blessSpawned=0;   // blessings that have appeared this match: legendary chances grow with it
+const legChance=(base,per,max)=>Math.min(max,base+per*blessSpawned);
+const LEG_TIER={n:'Legendary',m:1,c:'#ff9a2a',leg:true};
+const XKEYS=['a','s','d','1','2','3','4','5','6'];
+const LEGEND_BLESS=[
+  {name:'Personality Disorder',ic:'masks',leg:true,desc:()=>'Change your hero at ANY time: buttons appear at the top of the screen and the game never stops. Your health keeps its percentage, items and blessings stay, each hero remembers its own cooldowns.',apply:e=>{ e.pd=true; }},
+  {name:'Unlimited Knowledge',ic:'book',leg:true,desc:()=>'Learn a random extra spell from another hero. It is bound to the first free spell key (A, S, D) - or 1, 2, 3 when those are taken. Max 4 extra spells.',apply:e=>{ giveExtraSpell(e); }},
+];
+function giveExtraSpell(e){
+  if(!e.xs) e.xs=[];
+  if(e.xs.length>=4) return false;
+  const cur=e.realCls||e.cls, have=new Set(e.xs.map(x=>x.name)), pool=[];
+  for(const k of CLASS_KEYS){
+    if(k===cur||k==='runekeeper') continue;
+    CLASSES[k].spells.forEach((sp,i)=>{ if(i<7&&sp.kind!=='form'&&sp.kind!=='fortune'&&sp.kind!=='channel'&&!have.has(sp.name)) pool.push({...sp,from:CLASSES[k].name,desc:'Borrowed from the '+CLASSES[k].name+'. '+sp.desc}); });
+  }
+  if(!pool.length) return false;
+  const sp=pool[ri(0,pool.length-1)];
+  e.xs.push(sp); e.cd[7+e.xs.length]=0; xsAssign(e);
+  if(e.isPlayer){ const k=String(e.xk[e.xs.length-1]).toUpperCase(); announce('\u2605 NEW SPELL: '+sp.name+' ('+sp.from+') - press '+k); fxRing(e.x,e.y,90,'#ff9a2a',.6); }
+  return true;
+}
+function xRect(i){ const j=i-8, sw=82, sh=54, gap=8, tot=4*sw+3*gap; return {x:W/2+tot/2+16+(j%2)*(sw+gap), y:H-22-2*sh-gap+Math.floor(j/2)*(sh+gap), w:sw, h:sh}; }   // borrowed spells sit to the right of the bar
+function xsAssign(e){   // extra spells take the first keys that no active spell slot uses
+  if(!e.xs) return;
+  const used=new Set(), b=(e.isPlayer&&!spectating)?bindsFor(selClass):CLASSES[e.cls].spells.map(x=>x.k.toLowerCase());
+  for(let i=0;i<8;i++) if(slotOn(i,e)) used.add(b[i]);
+  e.xk=e.xs.map(()=>{ const k=XKEYS.find(q=>!used.has(q))||'7'; used.add(k); return k; });
+}
+function changeHero(e,cls){   // Personality Disorder: swap the hero in place, mid fight
+  const was=e.realCls||e.cls;
+  if(e.dead||!CLASSES[cls]||(cls===was&&!e.realCls)) return;
+  const base=CLASSES[was].hp;
+  if(!e.realCls) (e.hcd||(e.hcd={}))[was]=e.cd.slice(0,8);
+  clearForm(e); e.medOn=false; e.aura=null; e.spin=null; e.empower=null; e.recastUntil=0; e.ascendUntil=0; e.undyingUntil=0; e.blockUntil=0; e.dash=null;
+  e.realCls=null; e.manUntil=0; e.foolCd=null; e.foolUpg=null; e.upg={}; e.fortuneUntil=0; e.dodgeUntil=0; e.runeSel=0; e.formUntil=0;
+  const bonus=e.maxHp-base, ratio=e.hp/e.maxHp, C=CLASSES[cls];
+  e.cls=cls; e.color=C.c||e.color; e.speed=C.speed; e.maxHp=Math.max(50,C.hp+bonus); e.hp=Math.max(1,Math.round(e.maxHp*ratio));
+  const sv=e.hcd&&e.hcd[cls];
+  for(let j=0;j<8;j++) e.cd[j]=sv?Math.max(sv[j],now):now+(j===7?10:4);
+  e.basicCd=now+.4;
+  wards=wards.filter(o=>o.owner!==e); beasts=beasts.filter(o=>o.owner!==e); runes=runes.filter(o=>o.owner!==e); portals=portals.filter(o=>o.owner!==e); seals=seals.filter(o=>o.owner!==e); mines=mines.filter(o=>o.owner!==e);
+  if(e.isPlayer){ if(spellCount<8) e.loadout=loadoutFor(cls); selClass=cls; rebuildKeymap(); visFace=null; }
+  xsAssign(e);
+  fxRing(e.x,e.y,100,'#ff9a2a',.6); fxFlash(e.x,e.y,70,'#ffffff',.25); burst(e.x,e.y,'#ff9a2a',26,260,.6,4);
+  floaters.push({x:e.x,y:e.y-50,v:0,txt:'NEW HERO: '+C.name.toUpperCase(),t0:now,last:now,col:'#ff9a2a'});
+}
+function heroSwUI(){
+  const el=document.getElementById('heroSw'); if(!el) return;
+  const on=!!(player&&player.pd&&player.isPlayer&&!spectating&&(state==='playing'||state==='paused'));
+  if(!on){ if(el.style.display!=='none') el.style.display='none'; return; }
+  if(!el.firstChild){
+    const l=document.createElement('div'); l.className='lbl'; l.innerHTML='PERSONALITY<br>DISORDER'; el.appendChild(l);
+    for(const key of CLASS_KEYS){
+      const d=document.createElement('div'); d.className='hb'; d.dataset.k=key; d.title=CLASSES[key].name;
+      const c=document.createElement('canvas'); c.width=c.height=40; const x=c.getContext('2d'); x.translate(20,20); drawBody(x,key,CLASSES[key].c,12,-0.5);
+      d.appendChild(c); d.addEventListener('pointerdown',ev=>{ ev.preventDefault(); ev.stopPropagation(); if(state==='playing'&&player&&player.pd) changeHero(player,key); }); el.appendChild(d);
+    }
+  }
+  if(el.style.display!=='flex') el.style.display='flex';
+  const cur=player.realCls||player.cls;
+  for(const d of el.querySelectorAll('.hb')) d.classList.toggle('cur',d.dataset.k===cur);
+}
+setInterval(heroSwUI,120);
 function blessOptions(){
-  return [...BLESS].sort(()=>Math.random()-.5).slice(0,3).map(b=>{ const t=rollTier(); return {name:b.name,tag:t.n,col:t.c,desc:b.desc(t.m),onPick:e=>giveBlessing(e,b,t)}; });
+  const o=[...BLESS].sort(()=>Math.random()-.5).slice(0,3).map(b=>{ const t=rollTier(); return {name:b.name,tag:t.n,col:t.c,desc:b.desc(t.m),onPick:e=>giveBlessing(e,b,t)}; });
+  const have=(player&&player.blessings)||[];
+  const pool=LEGEND_BLESS.filter(b=>!have.some(n=>n.indexOf(b.name)===0)&&!(b.name==='Unlimited Knowledge'&&player&&player.xs&&player.xs.length>=4));
+  for(let i=0;i<o.length&&pool.length;i++) if(Math.random()<legChance(.005,.006,.06)){ const b=pool.splice(ri(0,pool.length-1),1)[0]; o[i]={name:b.name,tag:'Legendary',leg:true,col:LEG_TIER.c,desc:b.desc(1),onPick:e=>giveBlessing(e,b,LEG_TIER)}; }
+  return o;
 }
 const BLESS_HEAD='&#9733; BLESSING &mdash; choose one: press <b>1</b> <b>2</b> <b>3</b> &middot; <b>H</b> hide / show';
 const ITEM_HEAD='&#9670; ITEM &mdash; choose one (you can hold only one): press <b>1</b> <b>2</b> <b>3</b> &middot; <b>H</b> hide / show';
 function announce(t){ announceText=t; announceUntil=now+6; feed.push({msg:t,col:'#ffd24a',t0:now}); }
 function spawnBlessing(){
+  blessSpawned++;
   if(sched) sched.fb=true;   // the first blessing has appeared: damage pickups may now spawn in the spawn rooms too
   blessing={x:CHX,y:CHY,alive:true};
   announce('\u2726 A BLESSING HAS APPEARED IN THE CENTRAL CHAMBER \u2726');
 }
 function giveBlessing(e,b,t){
   b.apply(e,t.m); e.blessings.push(b.name+(t.m>1?' ('+t.n+')':''));
-  (e.blessInfo||(e.blessInfo=[])).push({name:b.name+(t.m>1?' ('+t.n+')':''),desc:b.desc(t.m),col:t.m>1?t.c:'#ffd24a'});
-  feed.push({msg:e.name+' gained '+b.name+(t.m>1?' ('+t.n+')':''),col:t.m>1?t.c:'#ffd24a',t0:now});
+  (e.blessInfo||(e.blessInfo=[])).push({name:b.name+(t.m>1?' ('+t.n+')':''),desc:b.desc(t.m),col:(t.m>1||t.leg)?t.c:'#ffd24a'});
+  feed.push({msg:e.name+' gained '+(t.leg?'the LEGENDARY ':'')+b.name+(t.m>1?' ('+t.n+')':''),col:(t.m>1||t.leg)?t.c:'#ffd24a',t0:now});
+  if(t.leg&&e.isPlayer) announceText='\u2605 LEGENDARY: '+b.name.toUpperCase()+' \u2605', announceUntil=now+6;
   fxRing(e.x,e.y,70,t.c,.6); fxFlash(e.x,e.y,60,'#fff3b0',.3);
   for(let i=0;i<20;i++) spark(e.x+rnd(-16,16),e.y+rnd(-6,14),rnd(-20,20),rnd(-130,-50),t.c,rnd(3,5),.8);
 }
@@ -2073,7 +2155,7 @@ function updateBlessUI(){
     box.style.display='block'; chip.style.display='none';
     box.querySelector('.bhead').innerHTML=choiceHead;
     const c=document.getElementById('bcards'); c.innerHTML='';
-    pendingBless.forEach((b,i)=>{ const d=document.createElement('div'); d.className='bcard'; d.style.borderColor=b.col||'';
+    pendingBless.forEach((b,i)=>{ const d=document.createElement('div'); d.className='bcard'; d.style.borderColor=b.col||''; if(b.leg) d.classList.add('leg');
       d.innerHTML=`<h4 style="color:${b.col||'#ffd24a'}">${b.name}<span class="k">${i+1}</span></h4><p>${b.tag?'<b>'+b.tag+'</b> &middot; ':''}${b.desc}</p>`; d.onclick=()=>chooseBless(i); c.appendChild(d); });
   } else { box.style.display='none'; chip.style.display=pendingBless?'block':'none'; }
 }
@@ -2198,8 +2280,12 @@ const ITEMS=[
   {name:"Reaper's Scythe",col:'#d0d0ff',desc:'Kills heal 12% health and refund 1.5s of cooldowns. +12% damage.',st:{reap:1,dmg:.12}},
   {name:'Bulwark Sigil',col:'#8fe3ff',desc:'Gain a 140 shield every 10s, take 10% less damage.',st:{shield:140,armor:.1}},
   {name:"Executioner's Mark",col:'#ff3a3a',desc:'+40% damage to enemies below 40% health, +8% damage.',st:{exec:.4,dmg:.08}},
+  // LEGENDARY items: very rare, only ever offered in place of a normal choice
+  {name:'Eye of Agamotto',legend:true,col:'#5dffb0',desc:'LEGENDARY. You see the WHOLE map: the fog of war is gone for you. The Fool can still use Leap of Faith (R) while everything is visible.',st:{eye:1}},
+  {name:'Force of the Ancients',legend:true,col:'#ffb020',desc:'LEGENDARY. Every stat at once: +350 health, +9 regen, +20% damage, +14% move speed, +20% attack speed, -15% cooldowns, 10% lifesteal, 12% less damage taken, 12% thorns, +25% vision, hits ignite and slow, +20% execute damage, a 100 shield every 10s, Phoenix revival and Reaper kills.',st:{hp:350,regen:9,dmg:.2,speed:.14,as:.2,cdr:.15,life:.1,armor:.12,thorns:.12,vis:.25,burn:10,slow:.15,exec:.2,shield:100,wind:.3,reap:1}},
 ];
-const ISTAT={speed:'bSpeed',cdr:'bCdr',regen:'bRegen',dmg:'bDmg',burn:'bBurn',life:'bLife',armor:'bArmor',thorns:'bThorns',wind:'bWind',as:'bAS',vis:'bVis',slow:'bSlowHit',reap:'bReap',shield:'bShieldAmt',exec:'bExec'};
+const ITEMS_N=ITEMS.map((x,i)=>i).filter(i=>!ITEMS[i].legend), ITEMS_L=ITEMS.map((x,i)=>i).filter(i=>ITEMS[i].legend);
+const ISTAT={speed:'bSpeed',cdr:'bCdr',regen:'bRegen',dmg:'bDmg',burn:'bBurn',life:'bLife',armor:'bArmor',thorns:'bThorns',wind:'bWind',as:'bAS',vis:'bVis',slow:'bSlowHit',reap:'bReap',shield:'bShieldAmt',exec:'bExec',eye:'bEye'};
 function itemApply(e,id,sign){
   for(const [k,v] of Object.entries(ITEMS[id].st)){
     if(k==='hp'){ e.maxHp+=sign*v; if(sign>0) e.hp+=v; else e.hp=Math.min(e.hp,e.maxHp); }
@@ -2216,7 +2302,7 @@ function equipItem(e,id){
 const UPG_HEAD='&#9650; UPGRADE &mdash; pick a spell to improve: press <b>1</b> <b>2</b> &middot; <b>H</b> hide / show';
 function takeItem(e,opts){
   if(e.isPlayer&&!spectating){
-    pendingBless=opts.map(id=>({name:ITEMS[id].name,tag:'Item',col:ITEMS[id].col,desc:ITEMS[id].desc,onPick:p=>equipItem(p,id)}));
+    pendingBless=opts.map(id=>({name:ITEMS[id].name,leg:!!ITEMS[id].legend,tag:ITEMS[id].legend?'Legendary item':'Item',col:ITEMS[id].col,desc:ITEMS[id].desc,onPick:p=>equipItem(p,id)}));
     if(e.item!=null){ const cur=ITEMS[e.item]; pendingBless.push({name:'Keep '+cur.name,tag:'Current',col:cur.col,desc:cur.desc,onPick:()=>{}}); }
     choiceHead=ITEM_HEAD; blessHidden=false; updateBlessUI();
   } else if(e.cid){
@@ -2299,7 +2385,7 @@ const KWHERE={item:'bottom-left room',upgrade:'top-left room',ult:'top-right roo
 function activateStation(st){
   if(st.alive) return;
   st.alive=true;
-  if(st.kind==='item'){ const a1=ri(0,ITEMS.length-1); let b1=ri(0,ITEMS.length-2); if(b1>=a1) b1++; st.opts=[a1,b1]; st.item=a1; }
+  if(st.kind==='item'){ const pl=ITEMS_N.slice(); let a1=pl.splice(ri(0,pl.length-1),1)[0], b1=pl[ri(0,pl.length-1)]; if(Math.random()<legChance(.01,.012,.12)){ const L=ITEMS_L[ri(0,ITEMS_L.length-1)]; if(Math.random()<.5) a1=L; else b1=L; st.legend=true; } else st.legend=false; st.opts=[a1,b1]; st.item=a1; }
   burst(st.x,st.y,KCOL[st.kind],30,300,.8,4); addShake(st.x,st.y,3);
 }
 // Blessing alone at 30s, then two random power-ups 15s later; repeats every 60s. Both are announced 5s early and pointed at.
@@ -2374,7 +2460,7 @@ function drawStation(st){
   if(!st.alive){ ctx.restore(); return; }
   const g=ctx.createRadialGradient(x,y+bob,0,x,y+bob,48); g.addColorStop(0,col); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.globalAlpha=.4; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y+bob,48,0,7); ctx.fill(); ctx.globalAlpha=1;
   ctx.translate(x,y+bob); ctx.lineJoin='round'; ctx.lineWidth=2.5; ctx.strokeStyle='#000'; ctx.fillStyle=col;
-  if(st.kind==='item'){ ctx.rotate(now*1.4); ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(12,0); ctx.lineTo(0,16); ctx.lineTo(-12,0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(5,-3); ctx.lineTo(-5,-3); ctx.closePath(); ctx.fill(); }
+  if(st.kind==='item'){ ctx.save(); ctx.rotate(now*1.4); ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(12,0); ctx.lineTo(0,16); ctx.lineTo(-12,0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(5,-3); ctx.lineTo(-5,-3); ctx.closePath(); ctx.fill(); ctx.restore(); if(st.legend){ ctx.strokeStyle='#ff9a2a'; ctx.lineWidth=2.5; ctx.globalAlpha=.55+.4*Math.sin(now*5); ctx.beginPath(); ctx.arc(0,0,26,0,7); ctx.stroke(); ctx.globalAlpha=1; } }
   else if(st.kind==='upgrade'){ ctx.beginPath(); ctx.arc(0,0,15,0,7); ctx.fillStyle='#2a3140'; ctx.fill(); ctx.stroke(); ctx.fillStyle='#e8f0ff'; for(const o of [-5,5]){ ctx.beginPath(); ctx.moveTo(0,o-10); ctx.lineTo(9,o); ctx.lineTo(-9,o); ctx.closePath(); ctx.fill(); } }
   else if(st.kind==='ult'){ ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fillStyle='#3a2406'; ctx.fill(); ctx.stroke(); ctx.fillStyle='#ffd24a'; ctx.beginPath(); ctx.moveTo(4,-12); ctx.lineTo(-8,2); ctx.lineTo(-1,2); ctx.lineTo(-4,13); ctx.lineTo(9,-3); ctx.lineTo(2,-3); ctx.closePath(); ctx.fill(); ctx.stroke(); }
   else if(st.kind==='vision'){ ctx.beginPath(); ctx.moveTo(-18,0); ctx.quadraticCurveTo(0,-16,18,0); ctx.quadraticCurveTo(0,16,-18,0); ctx.fillStyle='#e8f6ff'; ctx.fill(); ctx.stroke(); ctx.fillStyle='#2f7bff'; ctx.beginPath(); ctx.arc(0,0,7,0,7); ctx.fill(); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-2,-2,2,0,7); ctx.fill(); }
@@ -3276,9 +3362,12 @@ function renderHUD(){
   txt(Math.ceil(player.hp)+' / '+player.maxHp,hx+hw/2,hy+17,'bold 14px Consolas,monospace','#fff','center');
   if(player.blessings.length){
     let cxp=hx; ctx.font='bold 11px Consolas,monospace';
-    for(const n of player.blessings){ const w=ctx.measureText('★ '+n).width+12;
-      ctx.fillStyle='rgba(40,30,0,.8)'; ctx.fillRect(cxp,hy-80,w,17); ctx.fillStyle='#ffd24a'; ctx.fillRect(cxp,hy-80,3,17);
-      txt('★ '+n,cxp+8,hy-67,'bold 11px Consolas,monospace','#ffd24a','left',false); cxp+=w+5; }
+    let brow=0; const blim=Math.max(hx+hw,W/2-190);   // chips wrap upwards instead of running under the spell bar
+    player.blessings.forEach((n,k)=>{ const inf=(player.blessInfo||[])[k]||{}, bc=inf.col||'#ffd24a', w=ctx.measureText('★ '+n).width+12;
+      if(cxp>hx&&cxp+w>blim){ cxp=hx; brow++; }
+      const by=hy-80-brow*20;
+      ctx.fillStyle='rgba(40,30,0,.8)'; ctx.fillRect(cxp,by,w,17); ctx.fillStyle=bc; ctx.fillRect(cxp,by,3,17);
+      txt('★ '+n,cxp+8,by+13,'bold 11px Consolas,monospace',bc,'left',false); cxp+=w+5; });
   }
   // active buffs
   let bxp=hx; const buffs=[['dmgUntil','DMG +40%','damage'],['armorUntil','ARMOR','armor'],['spdUntil','SPEED','speed']];
@@ -3286,7 +3375,7 @@ function renderHUD(){
     ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-56,92,18); ctx.fillStyle=PICK[t].col; ctx.fillRect(bxp,hy-56,4,18);
     txt(l+' '+Math.ceil(rem),bxp+10,hy-43,'bold 11px Consolas,monospace',PICK[t].col,'left',false); bxp+=98; }
   if(player.medBonus>0){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-78,150,18); ctx.fillStyle='#d77bff'; ctx.fillRect(bxp,hy-78,4,18); txt((player.medOn?'FOCUS +':'FOCUS fading +')+Math.round(player.medBonus*100)+'%',bxp+10,hy-65,'bold 11px Consolas,monospace','#d77bff','left',false); }
-  if(player.item!=null){ const it=ITEMS[player.item]; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-56,190,18); ctx.fillStyle=it.col; ctx.fillRect(bxp,hy-56,4,18); txt('\u25C6 '+it.name,bxp+10,hy-43,'bold 11px Consolas,monospace',it.col,'left',false); }
+  if(player.item!=null){ const it=ITEMS[player.item]; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-56,190,18); ctx.fillStyle=it.col; ctx.fillRect(bxp,hy-56,4,18); txt('◆ '+it.name,bxp+10,hy-43,'bold 11px Consolas,monospace',it.col,'left',false); }
   // kills
   if(!tut.on){
   const kx=slotRect(0).x-16;
@@ -3295,9 +3384,9 @@ function renderHUD(){
   }
   // spells
   const hov=hudHover();
-  for(let i=0;i<8;i++){
+  for(let i=0;i<8+(player.xs?player.xs.length:0);i++){
     if(!slotOn(i,player)) continue;
-    const s=spellOf(player,i), r=slotRect(i), rem=player.cd[i]-now;
+    const s=spellOf(player,i), r=i>=8?xRect(i):slotRect(i), rem=(player.cd[i]||0)-now;
     ctx.fillStyle='rgba(8,14,8,.85)'; ctx.fillRect(r.x,r.y,r.w,r.h);
     ctx.fillStyle=s.color; ctx.globalAlpha=rem>0?.25:.55; ctx.fillRect(r.x,r.y,r.w,r.h); ctx.globalAlpha=1;
     ctx.fillStyle='rgba(8,14,8,.45)'; ctx.fillRect(r.x,r.y+r.h-20,r.w,20);
@@ -3492,6 +3581,7 @@ const keyRank=(cls,i)=>{ if(i===7) return 99; const r='qwerasd'.indexOf(bindsFor
 let bindCache=null;
 function rebuildKeymap(){ KEYMAP={}; bindCache=bindsFor(selClass); bindCache.forEach((k,i)=>{ KEYMAP[k]=i; }); }
 function keyLabel(e,i){
+  if(i>=8) return (e&&e.xk&&e.xk[i-8])?String(e.xk[i-8]).toUpperCase():'?';
   if(e&&e.isPlayer&&!spectating&&e.cls===selClass){ const k=(bindCache||bindsFor(selClass))[i]; return k.length===1?k.toUpperCase():k.replace(/^arrow/,'').toUpperCase(); }
   if(e&&e.kbinds&&e.kbinds[i]) return String(e.kbinds[i]).toUpperCase();   // another player's bindings (online)
   return CLASSES[e.cls].spells[i].k;
@@ -3612,7 +3702,10 @@ addEventListener('keydown',ev=>{
   }
   if(k.startsWith('arrow')||k===' '){ ev.preventDefault(); keys[k]=true; return; }
   if(ev.ctrlKey||ev.metaKey||ev.altKey) return;
-  if(state==='playing'&&!ev.repeat&&KEYMAP[k]!==undefined) castSpell(player,KEYMAP[k],mouseW.x,mouseW.y);
+  if(state==='playing'&&!ev.repeat){
+    let si=KEYMAP[k]; const xj=(player&&player.xk)?player.xk.indexOf(k):-1; if(xj>=0) si=8+xj;
+    if(si!==undefined) castSpell(player,si,mouseW.x,mouseW.y);
+  }
 });
 addEventListener('keyup',ev=>{ const k=ev.key.toLowerCase(); delete keys[k]; if(k==='tab') showBoard=false; });
 addEventListener('blur',()=>{ for(const k in keys) delete keys[k]; mouseHeld=false; atkHeld=false; showBoard=false; });
@@ -3782,7 +3875,7 @@ function startGame(){
   const duel=modeEl.value==='duel', tsz=duel?+document.getElementById('tsize').value:1; teamMode=duel; teamScore=[0,0]; specAuto=true; specNext=0;
   
   fogOn=!spectating&&document.getElementById('fog').checked;
-  blessing=null; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
+  blessing=null; blessSpawned=0; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
   noCd=training&&document.getElementById('nocd').checked;
   BD=BOTDIFF[diffEl.value]||BOTDIFF.normal;
   const nBots=training?0:duel?2*tsz-1:(training||spectating?clamp(+botsEl.value|0,0,15):0);
