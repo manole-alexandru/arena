@@ -62,7 +62,28 @@
   .mc.sel{border-color:#6dff8a;background:#12200f;box-shadow:0 0 12px rgba(109,255,138,.25)}
   .mc h3{margin:0 0 6px;color:#e8ffe8}
   .mc p{margin:0;font-size:13px;color:#8fb08c;line-height:1.4}
-  .lrow{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
+  .lrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:10px}
+  /* ---- tutorial ---- */
+  #tut{display:none;position:fixed;top:12px;right:12px;width:min(350px,92vw);z-index:4;background:rgba(8,16,8,.94);border:2px solid #5dff7a;border-radius:6px;padding:12px 14px 10px;pointer-events:none;box-shadow:0 0 18px rgba(93,255,122,.2);font-size:13px;line-height:1.5;color:#cde}
+  #tut.ok{border-color:#ffd24a;box-shadow:0 0 22px rgba(255,210,74,.35)}
+  #tut .tl{display:flex;justify-content:space-between;align-items:center;color:#5dff7a;font-size:11px;letter-spacing:2px}
+  #tut button{pointer-events:auto;padding:3px 10px;font-size:11px;letter-spacing:1px;background:#3a2020;border:1px solid #8a3a3a}
+  #tut button:hover{background:#6a2a2a}
+  #tut h3{margin:4px 0 6px;color:#e8ffe8;font-size:17px;letter-spacing:1px}
+  #tut b{color:#fff}
+  kbd{display:inline-block;min-width:14px;text-align:center;padding:0 6px;border:1px solid #6dff8a;border-radius:3px;color:#6dff8a;background:#12200f;font:inherit;font-weight:bold}
+  #tutList{list-style:none;margin:8px 0 2px;padding:0}
+  #tutList li{margin:3px 0;padding:3px 8px;border-left:3px solid #3b5a38;background:rgba(255,255,255,.04);color:#9fbf9c}
+  #tutList li.d{border-left-color:#5dff7a;color:#5dff7a}
+  #tutList li.d::before{content:"\2714 "}
+  #tutList li:not(.d)::before{content:"\25CB  "}
+  #tutNote{display:none;margin-top:6px;padding:4px 8px;background:rgba(80,40,0,.8);border:1px solid #ff9a3a;color:#ffc27a}
+  #tutOk{display:none;margin-top:8px;color:#ffd24a;font-weight:bold;letter-spacing:1px}
+  #tutBar{display:flex;gap:4px;margin-top:8px}
+  #tutBar span{flex:1;height:5px;background:#1a2a1a;border-radius:2px}
+  #tutBar span.dn{background:#5dff7a}
+  #tutBar span.cur{background:#ffd24a}
+  body.tut #bless,body.tut #blessChip{left:calc(50% - 170px)}
   @media(max-width:700px){.lrow{grid-template-columns:1fr}}
   .lbox{border:2px solid #3b5a38;background:#0b110a;border-radius:8px;padding:20px}
   .lbox h2{margin:0 0 8px;color:#e8ffe8;font-size:22px}
@@ -113,7 +134,7 @@
       <h2>1 &middot; CHOOSE A GAME MODE</h2>
       <div id="lobbyHost"></div>
       <div id="modeCards"></div>
-      <select id="mode" style="display:none"><option value="dm">Deathmatch</option><option value="dmfree">Deathmatch - you have no cooldowns</option><option value="duel">Team Duel</option><option value="spec">Spectate</option><option value="train">Training</option></select>
+      <select id="mode" style="display:none"><option value="tutorial">Tutorial</option><option value="duel">Team Duel</option><option value="dm">Deathmatch</option><option value="spec">Spectate</option><option value="train">Training</option></select>
       <div class="opts" id="modeOpts">
         <label class="td" style="display:none">Teams <select id="tsize"><option value="1">1 vs 1</option><option value="2">2 vs 2</option></select></label>
         <label class="dm">Bots <input type="range" id="bots" min="1" max="15" value="5"><b id="botsv">5</b></label>
@@ -143,6 +164,22 @@
   <div id="bcards"></div>
 </div>
 <div id="blessChip">&#9733; Blessing available &mdash; press <b>H</b></div>
+
+<div id="tut">
+  <div class="tl"><span id="tutLesson"></span><button id="tutExit">EXIT TUTORIAL</button></div>
+  <h3 id="tutTitle"></h3>
+  <div id="tutText"></div>
+  <ul id="tutList"></ul>
+  <div id="tutNote"></div>
+  <div id="tutOk"></div>
+  <div id="tutBar"></div>
+</div>
+<div id="tutEnd" class="overlay hidden"><div class="panel" style="max-width:540px;text-align:center">
+  <h1 style="color:#ffd24a;font-size:30px">TUTORIAL COMPLETE</h1>
+  <div class="sub">You can move, zoom, see through the fog, attack, cast spells, grab power-ups and win a 1v1 duel.</div>
+  <p style="color:#9fbf9c;font-size:13px;line-height:1.6">You are ready for a real match. Pick a game mode, a champion and your loadout &mdash; or replay the tutorial any time from the main menu.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px"><button id="tutPlay">PLAY A GAME</button><button id="tutAgain" style="background:#b8860b">REPLAY</button><button id="tutMenu" style="background:#444">MAIN MENU</button></div>
+</div></div>
 
 <div id="loadout" class="overlay hidden"><div class="panel">
   <div id="loSteps2"></div>
@@ -666,6 +703,8 @@ const cam={x:0,y:0};
 const mouse={x:0,y:0}, mouseW={x:0,y:0};
 let mouseHeld=false, atkHeld=false, nextHoldPath=0;
 const keys={};
+// tutorial state (the tutorial itself lives at the bottom of this script)
+const tut={on:false,i:-1,s:null,doneAt:0,tStart:0,f:{},used:new Set(),box:null,dummies:[],bot:null,botAI:null,noSpells:true,noClickMove:false,noteUntil:0,listHtml:'',wasDead:false};
 
 const BOT_NAMES=['Vex','Krieg','Moth','Blaze','Nyx','Rook','Pike','Juno','Ash','Dune','Echo','Fang','Goth','Hex','Ion'];
 
@@ -1679,7 +1718,7 @@ const WILD_BASIC={
   avatar:{name:'Primal Maul',cd:.4,kind:'cone',r:105,arc:2,dmg:36,burn:[12,3],color:'#6aff6a'},
 };
 function basicOf(e){ if(e.cls==='wildshaper'&&e.form) return WILD_BASIC[e.form]; return (e.cls==='paladin'&&now<e.ascendUntil)?ASC_BASIC:CLASSES[e.cls].basic; }
-const slotOn=(i,e)=>{ if(e&&e.loadout) return i===7||e.loadout.includes(i); return spellCount>=8||i<4||i===7; };   // e.loadout = the player's own 5-spell picks
+const slotOn=(i,e)=>{ if(tut.on&&tut.noSpells&&e&&e.isPlayer) return false; if(e&&e.loadout) return i===7||e.loadout.includes(i); return spellCount>=8||i<4||i===7; };   // e.loadout = the player's own 5-spell picks
 function castSpell(e,i,tx,ty){
   if(!slotOn(i,e)||e.dead||now<e.stunUntil||now<e.fearUntil||e.dash||now<e.cd[i]) return false;
   let s=spellOf(e,i), fort=false, fwas=false;
@@ -3064,9 +3103,11 @@ function renderHUD(){
   if(player.medBonus>0){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-78,150,18); ctx.fillStyle='#d77bff'; ctx.fillRect(bxp,hy-78,4,18); txt((player.medOn?'FOCUS +':'FOCUS fading +')+Math.round(player.medBonus*100)+'%',bxp+10,hy-65,'bold 11px Consolas,monospace','#d77bff','left',false); }
   if(player.item!=null){ const it=ITEMS[player.item]; ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(bxp,hy-56,190,18); ctx.fillStyle=it.col; ctx.fillRect(bxp,hy-56,4,18); txt('\u25C6 '+it.name,bxp+10,hy-43,'bold 11px Consolas,monospace',it.col,'left',false); }
   // kills
+  if(!tut.on){
   const kx=slotRect(0).x-16;
   txt(training?'BOXES DESTROYED':teamMode?'TEAM KILLS':'KILLS',kx,H-58,'bold 13px Consolas,monospace','#8a8','right');
   txt(training?''+player.kills:teamMode?teamScore[player.team]+' / '+killLimit:player.kills+' / '+killLimit,kx,H-22,'bold 34px Consolas,monospace',GREEN,'right');
+  }
   // spells
   const hov=hudHover();
   for(let i=0;i<8;i++){
@@ -3484,6 +3525,7 @@ botsEl.oninput=()=>document.getElementById('botsv').textContent=botsEl.value;
 const modeEl=document.getElementById('mode');
 modeEl.onchange=()=>{
   const tr=modeEl.value==='train';
+  document.getElementById('modeOpts').style.display=modeEl.value==='tutorial'?'none':'';
   const du=modeEl.value==='duel';
   document.querySelectorAll('.dm').forEach(e=>e.style.display=(tr||(du&&e.contains(botsEl)))?'none':'');
   document.querySelectorAll('.td').forEach(e=>e.style.display=du?'':'none');
@@ -3493,15 +3535,17 @@ modeEl.onchange=()=>{
 
 /* ---------- main menu wizard: 1 game mode -> 2 champion -> 3 loadout (-> start) ---------- */
 const MODES=[
-  {v:'dm',n:'Deathmatch',d:'Free-for-all against bots. First to the kill limit wins.'},
-  {v:'dmfree',n:'Deathmatch \u2014 no cooldowns',d:'Deathmatch where your spells have no cooldowns.'},
+  {v:'tutorial',n:'Tutorial',d:'New here? Learn moving, zooming, vision, attacking, spells and power-ups step by step, then win a practice duel.'},
   {v:'duel',n:'Team Duel (1v1 / 2v2)',d:'Two teams on the Sanctum map: a blessing room with 4 doors, upgrades in the corners and random pickups. Online: pick your team slot.'},
+  {v:'dm',n:'Deathmatch',d:'Free-for-all against bots. First to the kill limit wins.'},
   {v:'spec',n:'Spectate',d:'Watch the bots fight each other (no champion needed).'},
   {v:'train',n:'Training',d:'Practise your spells on boxes.'}];
 let wStep=1;
 function renderModeCards(){
   const box=document.getElementById('modeCards'); box.innerHTML='';
+  if(tutOffline()&&modeEl.value==='tutorial') modeEl.value='dm';
   for(const m of MODES){
+    if(m.v==='tutorial'&&tutOffline()) continue;
     const el=document.createElement('div'); el.className='mc'+(modeEl.value===m.v?' sel':'');
     el.innerHTML='<h3>'+m.n+'</h3><p>'+m.d+'</p>';
     el.onclick=()=>{ modeEl.value=m.v; modeEl.onchange(); renderModeCards(); updateWizardButtons(); };
@@ -3511,7 +3555,7 @@ function renderModeCards(){
 function wizardSteps(n){ return ['1 \u00B7 MODE','2 \u00B7 CHAMPION','3 \u00B7 LOADOUT'].map((t,i)=>'<span class="ws'+(i+1===n?' on':i+1<n?' done':'')+'">'+t+'</span>').join(''); }
 function updateWizardButtons(){
   document.getElementById('wBack').style.display='';
-  document.getElementById('wNext').textContent=wStep===1?(modeEl.value==='spec'&&!isClient()?'START \u00BB':'NEXT: CHAMPION \u00BB'):'NEXT: LOADOUT \u00BB';
+  document.getElementById('wNext').textContent=wStep===1?(modeEl.value==='tutorial'?'START TUTORIAL \u00BB':modeEl.value==='spec'&&!isClient()?'START \u00BB':'NEXT: CHAMPION \u00BB'):'NEXT: LOADOUT \u00BB';
 }
 const onlineActive=()=>typeof net!=='undefined'&&!!net.role;
 function showScreen(name){
@@ -3536,7 +3580,7 @@ function goStep(n){
 }
 document.getElementById('wBack').onclick=()=>{ if(wStep===1) showScreen(onlineActive()?'mp':'landing'); else goStep(wStep-1); };
 document.getElementById('wNext').onclick=()=>{
-  if(wStep===1){ if(modeEl.value==='spec'&&!isClient()){ startGame(); return; } goStep(2); }
+  if(wStep===1){ if(modeEl.value==='tutorial'&&!tutOffline()){ tutStart(); return; } if(modeEl.value==='spec'&&!isClient()){ startGame(); return; } goStep(2); }
   else goStep(3);
 };
 
@@ -3551,7 +3595,7 @@ function startGame(){
   
   fogOn=!spectating&&document.getElementById('fog').checked;
   blessing=null; nextBless=60; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
-  noCd=modeEl.value==='dmfree'||(training&&document.getElementById('nocd').checked);
+  noCd=training&&document.getElementById('nocd').checked;
   BD=BOTDIFF[diffEl.value]||BOTDIFF.normal;
   const nBots=training?0:duel?2*tsz-1:clamp(+botsEl.value|0,spectating?2:1,15);
   killLimit=training?Infinity:clamp(+document.getElementById('klim').value|0||20,3,100);
@@ -3605,6 +3649,315 @@ function endGame(w){
 document.getElementById('start').onclick=startGame;
 document.getElementById('again').onclick=()=>{ document.getElementById('pauseBtn').style.display='none'; document.getElementById('over').classList.add('hidden'); document.getElementById('menu').classList.remove('hidden'); state='menu'; goStep(1); };
 renderModeCards(); goStep(1); showScreen('landing');
+
+/* ============================================================
+   TUTORIAL MODE
+   7 lessons, every step blocks until the player performs the action. It runs on the real game systems
+   (fog of war, spells, blessings, stations, 1v1 arena) on its own small map.
+   ============================================================ */
+const tg=id=>document.getElementById(id);
+function tutOffline(){ return typeof net!=='undefined'&&!!net.role; }   // only hidden while you sit in an online lobby
+const tutTouch=()=>!!document.getElementById('pauseBtn');   // the touch build has no right-click, arrow keys or mouse wheel
+const TUT_BD={think:2.8,act:.25,gcd:2.6,err:.5,lead:.1,dmg:.6,basic:.3};   // the practice bot: slow, inaccurate, hits softly
+const TUT_HALL=()=>({x:49*T,y:24.5*T});
+function genMapTutorial(){
+  setTile(80,66.5,24.5,84,48); duelRooms=[];
+  ARENA.x0=62*T; ARENA.y0=36*T; ARENA.x1=77*T; ARENA.y1=47*T;
+  gateRects=[[57,41,58,43]]; arenaCfg={spots:[[65.5,41.5],[73.5,41.5]],kick:[53,42]};
+  grid=new Uint8Array(MW*MH).fill(1); doors=[];
+  const rect=(x0,y0,x1,y1,v=0)=>{ for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) if(x>0&&y>0&&x<MW-1&&y<MH-1) grid[y*MW+x]=v; };
+  rect(3,18,14,29);  rect(15,22,21,25);  rect(22,17,31,30);  rect(32,22,38,25);      // start room -> lesson room -> corridor
+  rect(39,13,58,35);                                                                  // the big training hall
+  for(const [x,y] of [[43,17],[43,30],[54,17],[54,30]]) rect(x,y,x+1,y+1,1);          // pillars
+  rect(47,10,50,12); rect(42,3,55,9); rect(39,5,41,7); rect(27,3,38,9);               // item room (north) + upgrade room (north-west)
+  rect(47,36,50,38); rect(42,39,55,45);                                               // ultimate-reset room (south)
+  rect(59,22,61,25); rect(62,17,70,31);                                               // blessing chamber (east)
+  rect(56,41,61,43); rect(62,36,76,46);                                               // corridor (sealed during the duel) + 1v1 arena
+}
+function tutStations(){
+  thirdEyeUntil=0; arenaDuel={active:false,t0:0};
+  sched={bless:1e9,pair:1e9,kinds:null,wb:false};   // nothing appears on its own: the tutorial hands out power-ups one by one
+  const P=(tx,ty)=>({x:(tx+.5)*T,y:(ty+.5)*T});
+  stations=[
+    {kind:'item',...P(48.5,6),alive:false,at:Infinity,item:0},
+    {kind:'upgrade',...P(32.5,6),alive:false,at:Infinity,item:0},
+    {kind:'ult',...P(48.5,42),alive:false,at:Infinity,item:0},
+    {kind:'arena',...P(66.5,41),alive:false,at:Infinity,item:0},
+  ];
+}
+const tutSt=k=>stations.find(q=>q.kind===k);
+function tutMakeBox(x,y,r,hp){
+  const b=makeEnt('Target','warrior','#8d6b3b',false);
+  b.isBox=true; b.color='#8d6b3b'; b.ai=null; b.r=r; b.x=b.px=x; b.y=b.py=y; b.speed=0; b.maxHp=b.hp=hp;
+  boxes.push(b); ents.push(b); return b;
+}
+function tutRemoveEnt(b){ if(!b) return; ents=ents.filter(o=>o!==b); boxes=boxes.filter(o=>o!==b); }
+function tutMakeBot(){
+  const key=['warrior','paladin','rogue','ranger'].find(k=>CLASSES[k]&&k!==selClass)||BOT_KEYS[0];
+  const b=makeEnt('Trainee',key,'hsl(8,75%,58%)',false);
+  b.maxHp=Math.round(b.maxHp*.7); b.hp=b.maxHp;
+  b.x=b.px=73.5*T; b.y=b.py=41.5*T; b.face=Math.PI; b.invulnUntil=1e9;   // waits, frozen and untouchable, until the duel starts
+  tut.botAI=b.ai; b.ai=null; ents.push(b); tut.bot=b; return b;
+}
+function tutBehind(dist){   // an open spot straight behind the hero (relative to where it faces), outside its short rear vision
+  const base=player.face+Math.PI;
+  for(const dd of [dist,dist*.9,dist*.8]) for(const off of [0,.35,-.35,.7,-.7,1.1,-1.1]){
+    const a=base+off, x=player.x+Math.cos(a)*dd, y=player.y+Math.sin(a)*dd;
+    if(!circleHit(x,y,44)&&lineClear(player.x,player.y,x,y,12)) return {x,y};
+  }
+  return null;
+}
+const tutKey=i=>'<kbd>'+keyLabel(player,i)+'</kbd>';
+const tutSlots=()=>[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,player)).sort((a,b)=>keyRank(player.cls,a)-keyRank(player.cls,b));
+const tutSpellItems=()=>tutSlots().map(i=>({t:tutKey(i)+' '+spellOf(player,i).name+(spellOf(player,i).ult?' (ULTIMATE)':''),d:tut.used.has(i)}));
+const tutNear=(x,y,r)=>Math.hypot(player.x-x,player.y-y)<r;
+
+const TUT_ALL=[
+ { g:1, get title(){ return tutTouch()?'MOVE: THE JOYSTICK':'MOVE: RIGHT-CLICK'; },
+   text:()=>tutTouch()?`Welcome to <b>ARENA</b>! First, walking. Put a finger on empty ground and <b>drag</b>: a joystick appears and your hero walks. Walk into the <b>glowing circle</b> in the next room.`:`Welcome to <b>ARENA</b>! First, walking. <b>Right-click</b> on the ground and your hero walks there (hold the button to keep following the cursor). Walk into the <b>glowing circle</b> in the next room.`,
+   goal:()=>[{x:27*T,y:24*T,r:120,label:'WALK HERE',edge:true}],
+   items:()=>(tutTouch()?[]:[{t:'<b>Right-click</b> to walk',d:!!tut.f.rclick}]).concat([{t:'Reach the circle',d:tutNear(27*T,24*T,100)}]),
+   tick:()=>{ if(!tutTouch()&&!tut.f.rclick&&tutNear(27*T,24*T,100)) tutNote('You got here without clicking. Walk back out and use the <b>right mouse button</b>.'); },
+   done:()=>(tut.f.rclick||tutTouch())&&tutNear(27*T,24*T,100) },
+ { g:1, get title(){ return tutTouch()?'MOVE: KEEP GOING':'MOVE: ARROW KEYS'; },
+   init:()=>{ tut.noClickMove=!tutTouch(); },
+   exit:()=>{ tut.noClickMove=false; },
+   text:()=>tutTouch()?`Keep using the <b>joystick</b> to walk on to the circle in the big hall.`:`You can also walk with the <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> <b>arrow keys</b>. Click-to-move is switched off for this exercise: use only the arrow keys to reach the circle in the big hall.`,
+   goal:()=>[{...TUT_HALL(),r:130,label:'WALK HERE',edge:true}],
+   items:()=>(tutTouch()?[]:[{t:'Use the <b>arrow keys</b>',d:!!tut.f.arrows}]).concat([{t:'Reach the circle in the hall',d:tutNear(TUT_HALL().x,TUT_HALL().y,110)}]),
+   done:()=>(tut.f.arrows||tutTouch())&&tutNear(TUT_HALL().x,TUT_HALL().y,110) },
+ { g:2, zoomStep:true, title:'ZOOM IN AND OUT',
+   text:()=>`Use the <b>mouse wheel</b> to zoom. Scroll <b>up</b> to zoom <b>in</b> and <b>down</b> to zoom <b>out</b>. Zooming out shows more of the battlefield, which is great in big fights.<br><span style="color:#8fb08c">Tip: push the mouse against a screen edge to look around, then press <kbd>SPACE</kbd> to snap the camera back to your hero.</span>`,
+   tick:()=>{ if(zoom>=1.3) tut.f.zin=true; if(zoom<=.8) tut.f.zout=true; },
+   items:()=>[{t:'Zoom <b>in</b> (scroll up)',d:!!tut.f.zin},{t:'Zoom <b>out</b> (scroll down)',d:!!tut.f.zout}],
+   done:()=>tut.f.zin&&tut.f.zout },
+ { g:3, title:'VISION: THE FOG OF WAR',
+   init:()=>{
+     zoom=1; SC=BASE_SC*zoom; fogOn=true; visFace=null;
+     let p=tutBehind(600);
+     if(!p){ const h=TUT_HALL(); player.x=player.px=h.x; player.y=player.py=h.y; player.path=[]; p=tutBehind(600)||{x:h.x-600,y:h.y}; }
+     tut.box=tutMakeBox(p.x,p.y,22,100);
+   },
+   text:()=>`Your hero <b>always faces your mouse cursor</b>. You can see far <b>in front</b> of you, but only a short way <b>behind</b> you &mdash; everything else is hidden in the fog, and enemies you can't see can't be targeted.<br><b>Something is hiding behind you. ${tutTouch()?'Walk or turn around':'Move your cursor around your hero'} to spot it!</b>`,
+   goal:()=>(now-tut.tStart>18&&tut.box&&!tut.f.seenOk)?[{x:tut.box.x,y:tut.box.y,r:40,label:'HINT: IT IS HERE',edge:true}]:[],
+   tick:(dt)=>{ if(now-tut.tStart>.4&&tut.box&&visiblePt(tut.box.x,tut.box.y,tut.box.r)) tut.f.seen=(tut.f.seen||0)+dt; },
+   items:()=>[{t:'Turn around and <b>see</b> the hidden box',d:(tut.f.seen||0)>=.6}],
+   done:()=>(tut.f.seen||0)>=.6 },
+ { g:4, title:'ATTACK WITH LEFT-CLICK',
+   text:()=>tutTouch()?`Found it! Now destroy it. <b>Tap</b> the box to lock on and auto-attack it. If you are too far, walk closer with the joystick.`:`Found it! Now destroy it. <b>Left-click</b> to attack: your hero fires a basic attack towards the cursor (hold the button to repeat). <b>Left-click directly on an enemy</b> to lock on and auto-attack it until you click again. Attacks have a limited <b>range</b>: if you are too far, walk closer with <b>right-click</b>.`,
+   tick:()=>{
+     const b=tut.box; if(!b||b.dead) return;
+     const bs=basicOf(player), rng=bs.kind==='proj'?bs.range:bs.r+b.r;
+     if(dst(player,b)>rng&&(player.target===b||atkHeld)) tutNote('Too far away! <b>Right-click</b> to walk closer to the box, then attack.');
+   },
+   goal:()=>(tut.box&&!tut.box.dead&&visiblePt(tut.box.x,tut.box.y,tut.box.r))?[{x:tut.box.x,y:tut.box.y,r:46,label:'DESTROY IT'}]:[],
+   items:()=>[{t:'Destroy the box with <b>left-click</b>',d:!!(tut.box&&tut.box.dead)}],
+   done:()=>!!(tut.box&&tut.box.dead) },
+ { g:5, title:'SPELLS (SIMPLE 5)',
+   init:()=>{
+     tutRemoveEnt(tut.box); tut.box=null; tut.noSpells=false; spellCount=5; player.loadout=loadoutFor(selClass); player.cd.fill(0);
+     const h=TUT_HALL(); tut.dummies=[0,1,2].map(k=>tutMakeBox(h.x+Math.cos(k*2.094)*330,h.y+Math.sin(k*2.094)*330,26,5000));
+   },
+   text:()=>`Now the fun part: <b>spells</b>! In this mode you have <b>4 spells + 1 ultimate</b>, each on its own key. They are aimed at your cursor. Cast <b>every spell once</b> on the training targets. Watch the <b>cooldown</b> timers on the bar at the bottom, and hover a spell with the mouse to read what it does.<br>The <b>ULTIMATE</b> (${tutKey(7)}) is your strongest spell, with a long cooldown.`,
+   items:tutSpellItems,
+   done:()=>tutSlots().every(i=>tut.used.has(i)) },
+ { g:6, title:'SPELLS (ALL 8)',
+   init:()=>{ spellCount=8; player.loadout=undefined; player.cd.fill(0); player.offCd=0; },
+   text:()=>`The full mode adds the bottom row ${tutKey(4)} ${tutKey(5)} ${tutKey(6)}: three extra <b>tool spells</b> (utility, control or a heavy hit). You choose your spells in the loadout screen before a match. Your cooldowns have been refilled: <b>use all 8 spells once</b> again.<br><span style="color:#8fb08c">Channels and toggles (like Meditate) are stopped for you automatically.</span>`,
+   items:tutSpellItems,
+   done:()=>tutSlots().every(i=>tut.used.has(i)) },
+ { g:7, title:'POWER-UP 1: AN ITEM',
+   init:()=>{ activateStation(tutSt('item')); announce('◆ AN ITEM HAS APPEARED ◆'); },
+   text:()=>`In a real match <b>power-ups</b> appear over time and everybody races for them. First: an <b>ITEM</b> (orange gem). Items give permanent stat boosts &mdash; you can carry only one. Follow the arrow to the <b>item room</b> (north of the hall), step on the gem and choose one with <kbd>1</kbd> <kbd>2</kbd> or by clicking it.`,
+   goal:()=>{ const q=tutSt('item'); return q.alive?[{x:q.x,y:q.y,r:60,label:'ITEM'}]:[]; },
+   items:()=>[{t:'Pick up the <b>item</b> and choose one',d:player.item!=null}],
+   done:()=>player.item!=null },
+ { g:7, title:'POWER-UP 2: A BLESSING',
+   init:()=>{ blessing={x:CHX,y:CHY,alive:true}; announce('✦ A BLESSING HAS APPEARED ✦'); },
+   text:()=>`Next: a <b>BLESSING</b> (golden star) in the <b>blessing chamber</b> to the east. Blessings are permanent perks &mdash; you pick one of three, and the rarer ones (Rare, Epic) are stronger. You can keep collecting blessings all match long.`,
+   goal:()=>(blessing&&blessing.alive)?[{x:blessing.x,y:blessing.y,r:70,label:'BLESSING'}]:[],
+   items:()=>[{t:'Take the <b>blessing</b> and choose one',d:player.blessings.length>0}],
+   done:()=>player.blessings.length>0 },
+ { g:7, title:'POWER-UP 3: ULTIMATE RESET',
+   init:()=>{ activateStation(tutSt('ult')); announce('⚡ AN ULTIMATE RESET HAS APPEARED ⚡'); tut.f.ultCast=player.cd[7]>now; },
+   text:()=>`The <b>ULT RESET</b> (yellow bolt, south room) instantly refills your ultimate &mdash; but it only works while your ultimate is <b>on cooldown</b>. So first <b>cast your ultimate</b> (${tutKey(7)}), then grab the reset.`,
+   goal:()=>{ const q=tutSt('ult'); return q.alive?[{x:q.x,y:q.y,r:60,label:'ULT RESET'}]:[]; },
+   tick:()=>{ if(player.cd[7]>now) tut.f.ultCast=true; const q=tutSt('ult'); if(q.alive&&player.cd[7]<=now&&tutNear(q.x,q.y,90)) tutNote('Your ultimate is ready, so the reset would be wasted. <b>Cast it first</b> ('+keyLabel(player,7)+').'); },
+   items:()=>[{t:'<b>Cast your ultimate</b> ('+tutKey(7)+')',d:!!tut.f.ultCast},{t:'Pick up the <b>ult reset</b>',d:!tutSt('ult').alive}],
+   done:()=>!tutSt('ult').alive },
+ { g:7, title:'POWER-UP 4: SPELL UPGRADE',
+   init:()=>{ activateStation(tutSt('upgrade')); announce('▲ A SPELL UPGRADE HAS APPEARED ▲'); },
+   text:()=>`The <b>SPELL UPGRADE</b> (white arrows, north-west room) makes one of your spells stronger &mdash; more damage, a shorter cooldown or a new effect. Step on it and choose which of the two offered spells to improve. Upgraded spells show a <b>&#9733;</b> on the bar.`,
+   goal:()=>{ const q=tutSt('upgrade'); return q.alive?[{x:q.x,y:q.y,r:60,label:'UPGRADE'}]:[]; },
+   items:()=>[{t:'Pick up the <b>upgrade</b> and choose a spell',d:Object.keys(player.upg).length>0}],
+   done:()=>Object.keys(player.upg).length>0 },
+ { g:7, title:'POWER-UP 5: THE 1 vs 1 ARENA',
+   init:()=>{ tutMakeBot(); activateStation(tutSt('arena')); announce('⚔ THE 1 vs 1 ARENA IS OPEN ⚔'); tut.f.duelOn=false; },
+   exit:()=>{ if(tut.bot){ tutRemoveEnt(tut.bot); tut.bot=null; } },
+   text:()=>`The last power-up is an <b>event</b>: the <b>1 vs 1 ARENA</b> (crossed swords, south-east). Step on it and you and another fighter are locked in a sealed arena &mdash; the last one standing wins. Your opponent is an <b>easy practice bot</b>. Use everything you learned: aim, spells, ultimate. <b>Defeat it!</b>`,
+   goal:()=>{ const q=tutSt('arena'); return (q.alive&&!arenaDuel.active)?[{x:q.x,y:q.y,r:60,label:'1 vs 1 ARENA',edge:true}]:[]; },
+   tick:(dt)=>{
+     const b=tut.bot; if(!b) return;
+     if(arenaDuel.active&&!tut.f.duelOn){ tut.f.duelOn=true; b.ai=tut.botAI; b.ai.target=player; }   // the duel has started: wake the bot up
+     if(tut.f.duelOn&&arenaDuel.active&&!b.dead&&b.ai) b.ai.lk={x:player.x,y:player.y,vx:player.vx,vy:player.vy,t:now};   // it always knows where you are
+     if(tut.f.duelOn&&player.dead&&!tut.f.lost){   // you fell: open the arena again and let the player retry
+       tut.f.lost=true; setGate(false); arenaDuel.active=false; tut.f.duelOn=false;
+       b.ai=null; b.path=[]; b.dead=false; b.hp=b.maxHp; b.x=b.px=73.5*T; b.y=b.py=41.5*T; b.invulnUntil=1e9; b.dash=null;
+       const q=tutSt('arena'); q.alive=true; q.at=Infinity;
+       tutNote('You were defeated. No problem: walk back onto the swords to <b>try again</b>.');
+     }
+     if(!player.dead&&tut.f.lost&&tut.wasDead){ tut.f.lost=false; player.x=player.px=50*T; player.y=player.py=42*T; player.path=[]; }
+   },
+   items:()=>[{t:'Step on the arena to start the duel',d:!!tut.f.duelOn||(tut.bot&&tut.bot.dead)},{t:'<b>Defeat</b> the practice bot',d:!!(tut.bot&&tut.bot.dead)}],
+   done:()=>!!(tut.bot&&tut.bot.dead) },
+];
+
+let TUT_STEPS=TUT_ALL;
+/* ---------- panel / notes ---------- */
+function tutNote(html){ const n=tg('tutNote'); n.innerHTML=html; n.style.display='block'; tut.noteUntil=performance.now()+4500; }
+function tutList(){
+  const L=tut.s&&tut.s.items?tut.s.items():[];
+  const html=L.map(o=>'<li class="'+(o.d?'d':'')+'">'+o.t+'</li>').join('');
+  if(html!==tut.listHtml){ tut.listHtml=html; tg('tutList').innerHTML=html; }
+}
+function tutPanel(){
+  const s=tut.s; if(!s) return;
+  tg('tut').style.display='block'; tg('tut').className=tut.doneAt?'ok':'';
+  tg('tutLesson').textContent='LESSON '+(s.g-(tutTouch()&&s.g>2?1:0))+' / '+(tutTouch()?6:7);
+  tg('tutTitle').textContent=s.title;
+  tg('tutText').innerHTML=s.text();
+  tg('tutBar').innerHTML=TUT_STEPS.map((_,k)=>'<span class="'+(k<tut.i?'dn':k===tut.i?'cur':'')+'"></span>').join('');
+  tg('tutOk').style.display='none'; tg('tutNote').style.display='none'; tut.listHtml=''; tutList();
+}
+function tutGo(i){
+  tut.i=i; tut.s=TUT_STEPS[i]; tut.doneAt=0; tut.f={}; tut.used.clear(); tut.tStart=now;
+  if(tut.s.init) tut.s.init();
+  tutPanel();
+}
+function tutNext(){
+  if(tut.s&&tut.s.exit) tut.s.exit();
+  if(tut.i+1>=TUT_STEPS.length) tutFinish(); else tutGo(tut.i+1);
+}
+function tutDoneFx(){
+  tut.doneAt=now;
+  fxRing(player.x,player.y,100,'#5dff7a',.7); fxFlash(player.x,player.y,70,'#e8ffe8',.3); burst(player.x,player.y,'#5dff7a',26,260,.7,4);
+  floaters.push({x:player.x,y:player.y-50,v:0,txt:'✔ STEP COMPLETE',t0:now,last:now,col:'#5dff7a'});
+  tg('tut').className='ok'; tg('tutOk').style.display='block';
+  tg('tutOk').textContent=tut.i+1>=TUT_STEPS.length?'✔ VICTORY! Tutorial complete.':'✔ Well done! Next lesson...';
+  tutList();
+}
+function tutTick(dt){
+  const s=tut.s; if(!s||!player) return;
+  if(player.medOn){ tut.medT=(tut.medT||0)+dt; if(tut.medT>1.6){ player.medOn=false; tut.medT=0; } } else tut.medT=0;
+  if(tut.noClickMove){ player.path=[]; mouseHeld=false; }
+  if(tut.doneAt){ if(now-tut.doneAt>=1.6) tutNext(); }
+  else {
+    if(s.tick) s.tick(dt);
+    if(s.done()) tutDoneFx();
+  }
+  tut.wasDead=player.dead;
+  tutList();
+  const n=tg('tutNote'); if(n.style.display!=='none'&&performance.now()>tut.noteUntil) n.style.display='none';
+}
+
+/* ---------- start / finish / exit ---------- */
+function tutStart(){
+  document.getElementById('loadout').classList.add('hidden');
+  spellCount=5; training=true; spectating=false; teamMode=false; teamScore=[0,0]; specAuto=true; specNext=0;
+  noCd=false; fogOn=false; killLimit=Infinity; BD=TUT_BD;
+  cv.style.cursor='none';
+  blessing=null; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
+  genMapTutorial(); buildLayers(); tutStations();
+  now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
+  ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[]; pickups=[];
+  player=makeEnt('You',selClass,'hsl(130,90%,60%)',true); ents.push(player);
+  player.loadout=loadoutFor(selClass);
+  respawn(player,true);
+  player.x=player.px=8.5*T; player.y=player.py=23.5*T; player.invulnUntil=0; player.face=0;
+  zoom=1; SC=BASE_SC; camFree=false; cam.x=player.x; cam.y=player.y; visFace=null;
+  TUT_STEPS=TUT_ALL.filter(q=>!(tutTouch()&&q.zoomStep));
+  tut.on=true; tut.noSpells=true; tut.noClickMove=false; tut.box=null; tut.bot=null; tut.dummies=[]; tut.wasDead=false; tut.s=null;
+  document.body.classList.add('tut');
+  document.getElementById('menu').classList.add('hidden'); document.getElementById('over').classList.add('hidden'); tg('tutEnd').classList.add('hidden');
+  state='playing';
+  tutGo(0);
+}
+function tutFinish(){
+  state='over'; cv.style.cursor='default'; tg('tut').style.display='none'; tg('tutEnd').classList.remove('hidden');
+}
+function tutCleanup(){
+  tut.on=false; tut.s=null; tut.noSpells=true; tut.noClickMove=false;
+  document.body.classList.remove('tut'); tg('tut').style.display='none'; tg('tutEnd').classList.add('hidden');
+  pendingBless=null; updateBlessUI(); fogOn=false; training=false; blessing=null;
+  spellCount=+document.getElementById('spells').value; BD=BOTDIFF[diffEl.value]||BOTDIFF.normal; killLimit=20;
+  if(player) player.loadout=undefined;
+  cv.style.cursor='default';
+}
+function tutLeave(page){   // back to the menu (page: 'landing' or 'wizard')
+  tutCleanup(); state='menu'; document.getElementById('menu').classList.remove('hidden');
+  if(page==='wizard') goStep(1); else showScreen('landing');
+}
+
+/* ---------- hooks into the game ---------- */
+{ const _castSpell=castSpell;
+  castSpell=function(e,i,tx,ty){
+    if(tut.on&&e===player&&tut.noSpells){ tutNote('Spells come in lesson 5. First learn the basics!'); return false; }
+    const ok=_castSpell(e,i,tx,ty);
+    if(ok&&tut.on&&e===player) tut.used.add(i);
+    return ok;
+  };
+  const _update=update;
+  update=function(dt){ _update(dt); if(tut.on&&state==='playing') tutTick(dt); };
+  const _render=render;
+  render=function(){ _render(); if(tut.on) tutOverlay(); };
+}
+addEventListener('mousedown',ev=>{
+  if(!tut.on||state!=='playing'||ev.target!==cv) return;
+  if(ev.button===2){
+    if(tut.noClickMove){ ev.stopImmediatePropagation(); ev.preventDefault(); tutNote('Click-to-move is off in this exercise. Use the <b>arrow keys</b>!'); return; }
+    tut.f.rclick=true;
+  }
+},true);
+addEventListener('keydown',ev=>{ if(tut.on&&ev.key.indexOf('Arrow')===0) tut.f.arrows=true; },true);
+
+/* ---------- world markers drawn on top of the game ---------- */
+function tutEdge(sx,sy,col,label,dist){
+  const dx=sx-W/2, dy=sy-H/2, hx=W/2-60, hy=H/2-120, t=Math.min(hx/Math.max(1,Math.abs(dx)),hy/Math.max(1,Math.abs(dy))), ax=W/2+dx*t, ay=H/2+dy*t, a=Math.atan2(dy,dx);
+  ctx.save(); ctx.translate(ax,ay); ctx.rotate(a); ctx.fillStyle=col; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(20,0); ctx.lineTo(-11,-13); ctx.lineTo(-4,0); ctx.lineTo(-11,13); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  txt(label+'  '+dist,ax,ay+(ay>H/2?-20:34),'bold 12px Consolas,monospace',col,'center');
+}
+function tutOverlay(){
+  if(!tut.s||!player||state==='menu') return;
+  const gl=(!tut.doneAt&&tut.s.goal)?tut.s.goal():[], pulse=.5+.5*Math.sin(now*4);
+  for(const g of gl){
+    const sx=(g.x-cam.x)*SC+W/2, sy=(g.y-cam.y)*SC+H/2, rr=g.r*SC;
+    const on=sx>-rr&&sx<W+rr&&sy>-rr&&sy<H+rr;
+    if(on){
+      ctx.save(); ctx.fillStyle='rgba(255,210,74,'+(.08+.08*pulse)+')'; ctx.beginPath(); ctx.arc(sx,sy,rr,0,7); ctx.fill();
+      ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3; ctx.setLineDash([12,8]); ctx.lineDashOffset=-now*40; ctx.beginPath(); ctx.arc(sx,sy,rr*(1+.04*pulse),0,7); ctx.stroke(); ctx.setLineDash([]);
+      const by=sy-rr-22+Math.sin(now*5)*4;
+      ctx.fillStyle='#ffd24a'; ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(sx,by+12); ctx.lineTo(sx-9,by-3); ctx.lineTo(sx+9,by-3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore(); txt(g.label,sx,by-10,'bold 13px Consolas,monospace','#ffd24a','center');
+    } else if(g.edge) tutEdge(sx,sy,'#ffd24a',g.label,Math.round(Math.hypot(g.x-player.x,g.y-player.y)/10));
+  }
+  if(!tut.doneAt&&(tut.s.items===tutSpellItems)){   // pulse the spell slots that still have to be cast
+    for(const i of tutSlots()){ if(tut.used.has(i)) continue; const r=slotRect(i);
+      ctx.strokeStyle='rgba(255,210,74,'+(.4+.6*pulse)+')'; ctx.lineWidth=3; ctx.strokeRect(r.x-3,r.y-3,r.w+6,r.h+6); }
+  }
+}
+
+/* ---------- menu wiring ---------- */
+tg('tutExit').onclick=()=>tutLeave('landing');
+tg('tutPlay').onclick=()=>tutLeave('wizard');
+tg('tutMenu').onclick=()=>tutLeave('landing');
+tg('tutAgain').onclick=tutStart;
+setInterval(()=>{ if(tut.on&&state==='menu') tutCleanup(); },250);   // the pause menu's "M" also leaves the tutorial
+setTimeout(()=>{
+  if(tutOffline()&&modeEl.value==='tutorial') modeEl.value='dm';
+  if(/[?&]tutorial(&|$)/.test(location.search)){ try{ tutStart(); }catch(e){ console.error('tutorial start failed',e); } return; }
+  modeEl.onchange(); renderModeCards(); updateWizardButtons();
+},0);
 
 let last=performance.now();
 function frame(t){
