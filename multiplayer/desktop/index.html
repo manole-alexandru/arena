@@ -2815,7 +2815,7 @@ function update(dt){
     for(let k=0;k<n&&!dead;k++){
       p.x+=p.vx/sp*st; p.y+=p.vy/sp*st; p.dist+=st;
       { const d=doorAtTile(Math.floor(p.x/T),Math.floor(p.y/T));
-        if(d&&p.doorSeen!==d){ p.doorSeen=d; toggleDoor(d,!d.open); if(solidAt(p.x,p.y)||!d.open||true){ if(p.s.explode) explodeAt(p.owner,p.x,p.y,p.s); dead=true; break; } } }
+        if(d&&!p.s.k&&p.doorSeen!==d){ p.doorSeen=d; toggleDoor(d,!d.open); if(solidAt(p.x,p.y)||!d.open||true){ if(p.s.explode) explodeAt(p.owner,p.x,p.y,p.s); dead=true; break; } } }
       if(solidAt(p.x,p.y)){ if(p.s.explode) explodeAt(p.owner,p.x,p.y,p.s); dead=true; break; }
       for(const t of foes(p.owner)){
         if(p.hitSet.has(t)) continue;
@@ -2957,6 +2957,7 @@ function toggleDoor(d,open){
 }
 function doorAtTile(tx,ty){ for(const d of doors) if(tx>=d.x&&tx<d.x+d.w&&ty>=d.y&&ty<d.y+d.h) return d; return null; }
 function meleeDoors(e,s,a,arc){
+  if(s.k) return;   // spells never work doors, only basic attacks
   for(const d of doors){
     const x=d.x*T,y=d.y*T,w=d.w*T,h=d.h*T, qx=clamp(e.x,x,x+w), qy=clamp(e.y,y,y+h);
     if(Math.hypot(qx-e.x,qy-e.y)>s.r+8) continue;
@@ -3539,11 +3540,22 @@ function renderCrosshair(){
   ctx.beginPath(); ctx.moveTo(mouse.x-15,mouse.y); ctx.lineTo(mouse.x-5,mouse.y); ctx.moveTo(mouse.x+5,mouse.y); ctx.lineTo(mouse.x+15,mouse.y);
   ctx.moveTo(mouse.x,mouse.y-15); ctx.lineTo(mouse.x,mouse.y-5); ctx.moveTo(mouse.x,mouse.y+5); ctx.lineTo(mouse.x,mouse.y+15); ctx.stroke();
 }
+function renderHoverRange(){   // hovering a spell slot shows its cast range as a ring around the hero
+  if(!player||player.dead||state!=='playing'&&state!=='paused') return;
+  const i=hudHover(); if(i<0) return;
+  const s=spellOf(player,i), R=s&&(s.range||s.dist); if(!R) return;
+  const sx=W/2+(player.x-cam.x)*SC, sy=H/2+(player.y-cam.y)*SC, rr=R*SC;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(sx,sy,rr,0,7);
+  ctx.globalAlpha=.07; ctx.fillStyle=s.color; ctx.fill();
+  ctx.globalAlpha=.85; ctx.strokeStyle=s.color; ctx.lineWidth=2; ctx.setLineDash([10,7]); ctx.stroke();
+  ctx.restore();
+}
 function render(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
   mouseW.x=(mouse.x-W/2)/SC+cam.x; mouseW.y=(mouse.y-H/2)/SC+cam.y;
   if(fogOn&&player) computeVision();
-  renderWorld(); if(fogOn&&player) renderFog(); renderHUD();
+  renderWorld(); if(fogOn&&player) renderFog(); renderHoverRange(); renderHUD();
   if(duelCD()){   // big 3-2-1 before the duel starts (everyone sees it, also online)
     const left=arenaDuel.go-now, n=Math.ceil(left), f=n-left;
     ctx.save(); ctx.globalAlpha=1-f*.5; txt(''+n,W/2,H/2-120+f*10,'bold '+Math.round(150-f*30)+'px Consolas,monospace','#ff5a4a','center'); ctx.restore();
