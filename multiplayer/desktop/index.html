@@ -2313,18 +2313,21 @@ function takeItem(e,opts){
   } else if(e.item==null||Math.random()<.6) equipItem(e,opts[ri(0,opts.length-1)]);
 }
 function applyUpgrade(e,i){
-  e.upg[i]=true; e.cd[i]=0;
+  // while manifested, the upgrade goes to the base hero (the Fool), not to the borrowed class; it is waiting when the Fool comes back
+  if(e.realCls){ (e.foolUpg||(e.foolUpg={}))[i]=true; if(e.foolCd) e.foolCd[i]=0; }
+  else { e.upg[i]=true; e.cd[i]=0; }
   fxRing(e.x,e.y,80,'#ffffff',.6); fxFlash(e.x,e.y,70,'#ffffff',.3); burst(e.x,e.y,'#e8f0ff',26,260,.7,4);
-  { const sp=spellOf(e,i), txt='\u25B2 '+sp.name+' - '+UPG[e.cls][i][1]; if(e.isPlayer){ noteText=txt; noteUntil=now+6; } else if(e.cid) sendTo(e.cid,{t:'note',txt}); }
+  { const bc=e.realCls||e.cls, sp={name:CLASSES[bc].spells[i].name+'+'}, txt='\u25B2 '+sp.name+' - '+UPG[bc][i][1]; if(e.isPlayer){ noteText=txt; noteUntil=now+6; } else if(e.cid) sendTo(e.cid,{t:'note',txt}); }
 }
 function upgradeSpell(e){
-  const c=[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,e)&&!e.upg[i]).sort(()=>Math.random()-.5); if(!c.length) return false;
+  const bc=e.realCls||e.cls, have=e.realCls?(e.foolUpg||{}):e.upg;   // manifested Fool: upgrade the Fool's spells, not the borrowed hero's
+  const c=[0,1,2,3,4,5,6,7].filter(i=>slotOn(i,e)&&!have[i]).sort(()=>Math.random()-.5); if(!c.length) return false;
   const picks=c.slice(0,2);
   if(e.isPlayer&&!spectating){
-    pendingBless=picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[e.cls][i][1]+dmgText({...b,...UPG[e.cls][i][0]}),onPick:p=>applyUpgrade(p,i)}; });
+    pendingBless=picks.map(i=>{ const b=CLASSES[bc].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[bc][i][1]+dmgText({...b,...UPG[bc][i][0]}),onPick:p=>applyUpgrade(p,i)}; });
     choiceHead=UPG_HEAD; blessHidden=false; updateBlessUI();
   } else if(e.cid){
-    offerRemote(e,picks.map(i=>{ const b=CLASSES[e.cls].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[e.cls][i][1],onPick:p=>applyUpgrade(p,i)}; }),UPG_HEAD);
+    offerRemote(e,picks.map(i=>{ const b=CLASSES[bc].spells[i]; return {name:b.name+' \u2605',tag:'Upgrade ['+keyLabel(e,i)+']',col:'#e8f0ff',desc:UPG[bc][i][1],onPick:p=>applyUpgrade(p,i)}; }),UPG_HEAD);
   } else applyUpgrade(e,picks[0]);
   return true;
 }
@@ -2360,6 +2363,7 @@ function startDuel(a){
   [[a,pa.x,pa.y,pb],[b,pb.x,pb.y,pa]].forEach(([e,x,y,op])=>{
     burst(e.x,e.y,'#ff4040',20,240,.5,4);
     e.x=e.px=x; e.y=e.py=y; e.path=[]; e.moveVec=null; e.dash=null; e.invulnUntil=now+GO+.3; e.stunUntil=now+GO; e.target=null; e.medOn=false;
+    e.hp=e.maxHp; e.burnUntil=e.slowUntil=0;   // both fighters start the duel at full health
     e.face=Math.atan2(op.y-y,op.x-x);
     if(e.isPlayer){ cam.x=x; cam.y=y; }
     burst(x,y,'#ff4040',20,240,.5,4); fxRing(x,y,70,'#ff4040',.5);
@@ -2928,8 +2932,10 @@ function update(dt){
     }
     if(!camFree&&!spectating&&state==='playing'&&mouseIn&&mouseSeen&&(mouse.x<8||mouse.x>W-8||mouse.y<8||mouse.y>H-8)) camFree=true;
     const hw=W/2/SC, hh=H/2/SC;
-    cam.x=hw*2>=MW*T?MW*T/2:clamp(cam.x,hw,MW*T-hw);
-    cam.y=hh*2>=MH*T?MH*T/2:clamp(cam.y,hh,MH*T-hh);
+    // a little dark padding past the map edge, so edges can be scrolled toward the middle (nobody hides under the minimap / spell bar)
+    const pad=170/SC;
+    cam.x=hw*2>=MW*T+2*pad?MW*T/2:clamp(cam.x,hw-pad,MW*T-hw+pad);
+    cam.y=hh*2>=MH*T+2*pad?MH*T/2:clamp(cam.y,hh-pad,MH*T-hh+pad);
   }
 }
 
@@ -3623,7 +3629,7 @@ let bindCache=null;
 function rebuildKeymap(){ KEYMAP={}; bindCache=bindsFor(selClass); bindCache.forEach((k,i)=>{ KEYMAP[k]=i; }); }
 function keyLabel(e,i){
   if(i>=8) return (e&&e.xk&&e.xk[i-8])?String(e.xk[i-8]).toUpperCase():'?';
-  if(e&&e.isPlayer&&!spectating&&e.cls===selClass){ const k=(bindCache||bindsFor(selClass))[i]; return k.length===1?k.toUpperCase():k.replace(/^arrow/,'').toUpperCase(); }
+  if(e&&e.isPlayer&&!spectating&&(e.cls===selClass||e.realCls===selClass)){ const k=(bindCache||bindsFor(selClass))[i]; return k.length===1?k.toUpperCase():k.replace(/^arrow/,'').toUpperCase(); }
   if(e&&e.kbinds&&e.kbinds[i]) return String(e.kbinds[i]).toUpperCase();   // another player's bindings (online)
   return CLASSES[e.cls].spells[i].k;
 }
@@ -3810,13 +3816,19 @@ try{ const sv=localStorage.getItem('botDiff'); if(sv&&BOTDIFF[sv]) diffEl.value=
 diffEl.onchange=()=>{ try{ localStorage.setItem('botDiff',diffEl.value); }catch(e){} };
 botsEl.oninput=()=>document.getElementById('botsv').textContent=botsEl.value;
 const modeEl=document.getElementById('mode');
+// default kills to win: 10 for a 1v1 duel, 20 everywhere else (2v2 duel, deathmatch); a value the player typed is left alone
+function syncKillDefault(){
+  const kl=document.getElementById('klim'), want=(modeEl.value==='duel'&&document.getElementById('tsize').value==='1')?'10':'20';
+  if(kl.value==='10'||kl.value==='20') kl.value=want;
+}
+document.getElementById('tsize').addEventListener('change',syncKillDefault);
 modeEl.onchange=()=>{
   const tr=modeEl.value==='train';
   document.getElementById('modeOpts').style.display=modeEl.value==='tutorial'?'none':'';
   const du=modeEl.value==='duel';
   document.querySelectorAll('.dm').forEach(e=>e.style.display=(tr||(du&&e.contains(botsEl)))?'none':'');
   document.querySelectorAll('.td').forEach(e=>e.style.display=du?'':'none');
-  const kl=document.getElementById('klim'); if(du&&kl.value==='20') kl.value=10; else if(!du&&kl.value==='10') kl.value=20;
+  syncKillDefault();
   document.querySelectorAll('.tr').forEach(e=>e.style.display=tr?'':'none');
 };
 
