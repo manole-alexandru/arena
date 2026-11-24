@@ -203,6 +203,21 @@
   <h1 style="font-size:26px;letter-spacing:4px">3 &middot; LOADOUT: SPELLS &amp; KEYS</h1>
   <div class="opts" style="margin:8px 0"><label>Spell mode <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5" selected>Simple 5 (Q W E R + F ultimate)</option></select></label>
     <label title="Keyboard only: arrow keys move, attacks and spells auto-aim at the closest enemy (C pins one), movement spells go the way you move, +/- zoom. The game also starts fully zoomed out."><input type="checkbox" id="loNoMouse"> Disable mouse (keyboard-only, starts zoomed out)</label></div>
+  <div style="margin:0 0 8px"><button id="loInfoBtn" type="button" style="padding:5px 14px;font-size:13px" aria-expanded="false">&#9432; INFO: EXTRA OPTIONS</button></div>
+  <div id="loInfo" style="display:none;margin:0 0 12px;padding:10px 14px;border:2px solid #3b5a38;border-radius:6px;background:#0b110a;font-size:13px;line-height:1.5;color:#bcd">
+    <div style="margin-bottom:6px;color:#e8ffe8"><b>What the extra buttons and options do</b> (each one can be changed at any time on this screen):</div>
+    <ul style="margin:0;padding-left:18px">
+      <li><b style="color:#6dff8a">Spell mode</b> &mdash; <i>Simple 5</i>: you carry Q W E R plus the F ultimate (R and F are fixed, you pick 3 more). <i>All 8</i>: every spell is available, including the A S D tool spells. Change it with the drop-down.</li>
+      <li><b style="color:#6dff8a">Disable mouse</b> &mdash; keyboard-only play: arrow keys move, attacks and spells auto-aim at the closest enemy (C pins one), and +/- zoom. Tick or untick the box to change it.</li>
+      <li><b style="color:#6dff8a">Choose spells</b> (Simple 5, step 1) &mdash; click a spell card to add it to your loadout, click it again to remove it. Exactly 4 are needed (the ultimate is always included).</li>
+      <li><b style="color:#6dff8a">Key bindings</b> &mdash; click a spell card, then press the key you want. Esc cancels. Spells you did not pick sit on A S D.</li>
+      <li><b style="color:#6dff8a">C</b> &mdash; locks onto the closest enemy; your attacks and spells then auto-aim at it. Press C again to re-pick the closest enemy (it clears the lock if none is in sight).</li>
+      <li><b style="color:#6dff8a">X</b> &mdash; basic attack straight ahead, in the direction your character is facing (hold it to keep attacking). With a C lock it hits the locked enemy instead.</li>
+      <li><b style="color:#6dff8a">Space</b> &mdash; centers the camera back on your character.</li>
+      <li><b style="color:#ff8a8a">Reset hero to default</b> &mdash; puts this hero's spells and keys back to the original setup.</li>
+      <li><b style="color:#6dff8a">Back / Next</b> &mdash; go to the previous step, or to the next step / start the game.</li>
+    </ul>
+  </div>
   <div class="sub" id="loHero"></div>
   <div class="steps" id="loSteps"></div>
   <div class="grid" id="loGrid"></div>
@@ -569,6 +584,14 @@ function spellOf(e,i){
 }
 const CLASS_KEYS = Object.keys(CLASSES);
 const BOT_KEYS = CLASS_KEYS.filter(k=>!CLASSES[k].playerOnly);
+// hands out heroes nobody has yet (taken = heroes already in the match); only once every hero is used does it start a second round
+function heroPicker(taken){
+  const used=new Set(taken||[]); let deck=[];
+  return ()=>{
+    if(!deck.length){ deck=BOT_KEYS.filter(k=>!used.has(k)); if(!deck.length){ used.clear(); deck=BOT_KEYS.slice(); } deck.sort(()=>Math.random()-.5); }
+    const k=deck.pop(); used.add(k); return k;
+  };
+}
 
 /* ============================================================
    BODY RENDERING (simple geometry)
@@ -1843,7 +1866,7 @@ function basicAttack(e,tx,ty){
 const PICK={
   health:{col:'#4cff6a',label:'HEALTH +150',respawn:15},
   damage:{col:'#ff4a4a',label:'DAMAGE +40%',respawn:25,dur:12},
-  armor:{col:'#9fb4c8',label:'ARMOR -30% DMG',respawn:25,dur:12},
+  armor:{col:'#9fb4c8',label:'+150 SHIELD',respawn:25},
   speed:{col:'#ffd84a',label:'SPEED +30%',respawn:25,dur:12},
   heal_s:{col:'#7dffa0',label:'+70 HP',respawn:20},
   plate:{col:'#d6e0ee',label:'+60 SHIELD',respawn:30},
@@ -2175,7 +2198,8 @@ function applyPickup(e,p){
   if(p.type==='health') e.hp=Math.min(e.maxHp,e.hp+150);
   else if(p.type==='heal_s') e.hp=Math.min(e.maxHp,e.hp+70);
   else if(p.type==='plate'){ e.shield=Math.min(200,(now<e.shieldUntil?e.shield:0)+60); e.shieldUntil=now+30; }
-  else e[p.type==='damage'?'dmgUntil':p.type==='armor'?'armorUntil':'spdUntil']=now+d.dur;
+  else if(p.type==='armor'){ e.shield=Math.min(300,(now<e.shieldUntil?e.shield:0)+150); e.shieldUntil=now+30; }   // big armor: like a plate, but +150 (cap 300)
+  else e[p.type==='damage'?'dmgUntil':'spdUntil']=now+d.dur;
   fxRing(e.x,e.y,45,d.col,.5);
   for(let i=0;i<12;i++) spark(e.x+rnd(-14,14),e.y+rnd(-6,12),rnd(-15,15),rnd(-100,-40),d.col,rnd(3,5),.7);
   if(e.isPlayer) floaters.push({x:e.x,y:e.y-34,v:0,txt:d.label,t0:now,last:now,col:d.col});
@@ -3161,7 +3185,7 @@ function drawEnt(e){
   const bw=56, by=y-e.r-14;
   ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(x-bw/2-1,by-1,bw+2,7);
   ctx.fillStyle=(e.isPlayer||sameTeam(player,e))?'#4cff6a':'#e33'; ctx.fillRect(x-bw/2,by,bw*Math.max(0,e.hp/e.maxHp),5);
-  if(e.shield>0&&now<e.shieldUntil){ ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(x-bw/2-1,by+6,bw+2,5); ctx.fillStyle='#7fd0ff'; ctx.fillRect(x-bw/2,by+7,bw*Math.min(1,e.shield/200),3); }
+  if(e.shield>0&&now<e.shieldUntil){ ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(x-bw/2-1,by+6,bw+2,5); ctx.fillStyle='#7fd0ff'; ctx.fillRect(x-bw/2,by+7,bw*Math.min(1,e.shield/300),3); }
   ctx.font='bold 11px Consolas,monospace'; ctx.textAlign='center'; ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.8)';
   ctx.strokeText(e.name,x,by-5); ctx.fillStyle=e.color; ctx.fillText(e.name,x,by-5);
 }
@@ -3355,7 +3379,7 @@ function renderHUD(){
   txt((spectating?player.name+' · ':'')+CLASSES[player.cls].name.toUpperCase(),hx,hy-12,'bold 13px Consolas,monospace',player.color);
   ctx.fillStyle='#1a2a1a'; ctx.fillRect(hx,hy,hw,24);
   ctx.fillStyle=player.hp<player.maxHp*.3?'#e33':GREEN; ctx.fillRect(hx,hy,hw*Math.max(0,player.hp/player.maxHp),24);
-  if(player.shield>0&&now<player.shieldUntil){ ctx.fillStyle='#1a2a3a'; ctx.fillRect(hx,hy+26,hw,7); ctx.fillStyle='#7fd0ff'; ctx.fillRect(hx,hy+26,hw*Math.min(1,player.shield/200),7); }
+  if(player.shield>0&&now<player.shieldUntil){ ctx.fillStyle='#1a2a3a'; ctx.fillRect(hx,hy+26,hw,7); ctx.fillStyle='#7fd0ff'; ctx.fillRect(hx,hy+26,hw*Math.min(1,player.shield/300),7); }
   txt(Math.ceil(player.hp)+' / '+player.maxHp,hx+hw/2,hy+17,'bold 14px Consolas,monospace','#fff','center');
   if(player.blessings.length){
     let cxp=hx; ctx.font='bold 11px Consolas,monospace';
@@ -3667,6 +3691,10 @@ function renderLoadout(){
   document.getElementById('loReset').onclick=()=>{ saveBinds(selClass,C.spells.map(sp=>sp.k.toLowerCase())); saveLoadout(selClass,[0,1,2,3]); loPick=[0,1,2,3]; bindWait=-1; rebuildKeymap(); buildCards(); renderLoadout(); };
   bk.onclick=()=>{ if(toStep1){ bindWait=-1; loPick=loadoutFor(selClass).slice(); loStep=1; renderLoadout(); } else goStep(2); };
 }
+document.getElementById('loInfoBtn').onclick=function(){   // explanations of the extra options only show on demand
+  const p=document.getElementById('loInfo'), open=p.style.display==='none';
+  p.style.display=open?'block':'none'; this.setAttribute('aria-expanded',open); this.innerHTML=open?'&#9432; HIDE INFO':'&#9432; INFO: EXTRA OPTIONS';
+};
 function renderBinds(){   // compact summary on the main menu
   const box=document.getElementById('binds'); if(!box) return;
   const C=CLASSES[selClass], b=bindsFor(selClass), n8=is8(), lo=loadoutFor(selClass);
@@ -3880,17 +3908,17 @@ function startGame(){
   buildLayers(); genStations();
   now=0; winner=null; projectiles=[]; zones=[]; mines=[]; effects=[]; parts=[]; floaters=[]; feed=[]; clickMarks=[]; ghosts=[]; shake=0; dyings=[]; shards=[];
   ents=[]; boxes=[]; wards=[]; beasts=[]; runes=[]; portals=[]; seals=[];
-  const n=nBots+1;
+  const n=nBots+1, pickHero=heroPicker(spectating?[]:[selClass]);
   const names=[...BOT_NAMES].sort(()=>Math.random()-.5);
   if(spectating){
-    for(let i=0;i<nBots;i++) ents.push(makeEnt(names[i],BOT_KEYS[ri(0,BOT_KEYS.length-1)],`hsl(${((130+i*360/nBots)|0)%360},75%,58%)`,false));
+    for(let i=0;i<nBots;i++) ents.push(makeEnt(names[i],pickHero(),`hsl(${((130+i*360/nBots)|0)%360},75%,58%)`,false));
     player=ents[0];
   } else {
     player=makeEnt('You',selClass,'hsl(130,90%,60%)',true); ents.push(player);
     if(spellCount<8) player.loadout=loadoutFor(selClass);
     for(let i=0;i<nBots;i++){
       const hue=(130+(i+1)*360/n)%360;
-      ents.push(makeEnt(names[i],BOT_KEYS[ri(0,BOT_KEYS.length-1)],`hsl(${hue|0},75%,58%)`,false));
+      ents.push(makeEnt(names[i],pickHero(),`hsl(${hue|0},75%,58%)`,false));
     }
   }
   if(duel){ let k=0; for(const e of ents) if(e!==player) e.team=(k++<tsz-1)?0:1; }   // you + (tsz-1) allies vs tsz enemies
