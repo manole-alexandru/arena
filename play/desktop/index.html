@@ -161,7 +161,7 @@
     <div class="navrow"><button id="wBack" style="display:none">&laquo; BACK</button><button id="wNext" style="margin-left:auto">NEXT &raquo;</button></div>
     <div style="display:none"><button id="start">START</button></div>
     <div class="help">
-      <b>Move:</b> right-click (hold to keep following the cursor) or arrow keys. <b>Left-click</b> the ground: basic attack toward the cursor (hold to repeat). <b>Left-click an enemy:</b> lock on and auto-attack it until your next left-click. <b>Mouse to a screen edge</b> pans the camera, <b>Space</b> re-centers it, <b>scroll</b> zooms. Pick-ups: green = health, red = damage, grey = armor, yellow = speed.
+      <b>Move:</b> right-click (hold to keep following the cursor) or arrow keys. <b>Left-click</b> the ground: basic attack toward the cursor (hold to repeat). <b>Left-click an enemy:</b> lock on and auto-attack it until your next left-click. <b>Mouse to a screen edge</b> pans the camera, <b>Space</b> re-centers it, <b>scroll</b> zooms. <b>X:</b> attack straight ahead in the direction you face (hold to repeat; handy for opening doors; aims at the locked enemy while C is active). <b>C:</b> lock onto the closest enemy &mdash; your attacks <i>and all your spells</i> then aim at it automatically (press C again to re-pick, left-click the ground to release). Pick-ups: green = health, red = damage, grey = armor, yellow = speed.
       <b>Spells</b> aim at the cursor: <b>Q W E R</b> (top row) and <b>A S D F</b> (bottom row).
       <b>Tab</b> scoreboard &middot; <b>Esc</b> pause.
     </div>
@@ -201,7 +201,8 @@
 <div id="loadout" class="overlay hidden"><div class="panel">
   <div id="loSteps2"></div>
   <h1 style="font-size:26px;letter-spacing:4px">3 &middot; LOADOUT: SPELLS &amp; KEYS</h1>
-  <div class="opts" style="margin:8px 0"><label>Spell mode <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5" selected>Simple 5 (Q W E R + F ultimate)</option></select></label></div>
+  <div class="opts" style="margin:8px 0"><label>Spell mode <select id="spells"><option value="8">All 8 (Q W E R + A S D tools + F ultimate)</option><option value="5" selected>Simple 5 (Q W E R + F ultimate)</option></select></label>
+    <label title="Keyboard only: arrow keys move, attacks and spells auto-aim at the closest enemy (C pins one), movement spells go the way you move, +/- zoom. The game also starts fully zoomed out."><input type="checkbox" id="loNoMouse"> Disable mouse (keyboard-only, starts zoomed out)</label></div>
   <div class="sub" id="loHero"></div>
   <div class="steps" id="loSteps"></div>
   <div class="grid" id="loGrid"></div>
@@ -429,7 +430,7 @@ const CLASSES = {
       {k:'W',off:true,name:'Frost Shard',cd:4,kind:'proj',speed:850,range:620,pr:11,dmg:40,pierce:true,slow:[.45,2],color:'#8fe3ff',ai:'attack',aiRange:560,desc:'Quick piercing shard that slows by 55%.'},
       {k:'E',name:'Blink',cd:10,kind:'blink',phase:true,dist:340,color:'#c79bff',ai:'escape',desc:'Teleport to the cursor, even through walls.'},
       {k:'R',off:true,name:'Meteor',cd:18,kind:'ground',range:720,r:125,delay:1,dmg:230,stun:.5,color:'#ff4a2a',ai:'attack',aiRange:650,desc:'Call a meteor on the cursor after 1s. Huge damage.'},
-      {k:'A',name:'Meditate',cd:0,kind:'channel',gain:.015,max:.2,decay:.03,color:'#d77bff',desc:'Utility, toggle, no cooldown: sit still and channel for +1.5% damage per second, up to +20%. You cannot move, cast or attack while channeling. Press again to stop; the bonus then fades by 3% per second.'},
+      {k:'A',name:'Meditate',cd:0,kind:'channel',gain:.015,max:.2,decay:.03,color:'#d77bff',desc:'Utility, hold the key, no cooldown: sit still and channel for +1.5% damage per second, up to +20%. You cannot move, cast or attack while channeling. Release the key to stop; the bonus then fades by 3% per second.'},
       {k:'S',off:true,name:'Arcane Orb',cd:11,kind:'proj',speed:300,range:650,pr:24,dmg:160,explode:120,color:'#d77bff',ai:'attack',aiRange:550,desc:'Slow, huge orb that detonates on impact or at the end of its range.'},
       {k:'D',name:'Gravity Well',cd:13,kind:'zone',range:600,r:130,dur:3,dps:0,suck:140,slow:[.4,.4],color:'#8a5cff',ai:'attack',aiRange:550,desc:'Control: drags enemies to its center and slows them by 60% for 3s.'},
       {k:'F',off:true,name:'Supernova',cd:55,kind:'nova',r:270,dmg:190,stun:2.2,color:'#ffe36b',ai:'close',ult:true,desc:'ULTIMATE. A huge blast around you: 190 damage and a 2.2s stun. Wins team fights.'},
@@ -519,32 +520,32 @@ const CLASSES = {
       {k:'F',off:true,name:'Primal Avatar',cd:60,kind:'avatar',avatar:8,hp:300,dr:.3,spd:1.2,entry:{dur:2,mul:1.6,bleed:[26,3],shield:150,haste:1.35},r:280,color:'#6aff6a',ult:true,ai:'close',desc:'ULTIMATE. For 8s you are wolf, bear and hawk at once: +20% speed, +300 health, 30% less damage, flight over walls, a fast maul up close and a weaker ranged bolt at distance (when an enemy is within reach you melee automatically). SHIFT-IN BONUS: for the first 2s you get +35% speed (it does not stack), a 150 shield, and a maul that hits 60% harder and causes deep bleeding. You cannot shift out.'},
     ]},
   fool: {
-    name:'The Fool', shape:'jester', c:'#ffd24a', hp:680, speed:235, pref:260, playerOnly:true,
+    name:'The Fool', shape:'jester', c:'#ffd24a', hp:680, speed:235, pref:260,
     basic:{name:'Lucky Coin',cd:.6,kind:'proj',speed:820,range:520,pr:7,dmg:22,color:'#ffe27a',aiRange:470},
-    blurb:'Tarot wild card (0). Borrows other heroes\u2019 spells, cheats death, tears portals through walls and may become anyone. Player-only.',
+    blurb:'Tarot wild card (0). Borrows other heroes\u2019 spells, cheats death, tears portals through walls and may become anyone.',
     spells:[
-      {k:'Q',off:true,name:'Wild Card',cd:4,kind:'wildcard',color:'#ffd24a',desc:'Draw a card: fire a random damaging ability borrowed from another hero (Fireball, Meteor, Cleave, Power Shot, Judgment...).'},
-      {k:'W',name:'Ignorance is Bliss',cd:12,kind:'dash',dist:320,dur:.2,bliss:1,color:'#8fe3ff',desc:'Movement: dash forward and become immune to all damage for 1s.'},
+      {k:'Q',off:true,name:'Wild Card',cd:4,kind:'wildcard',ai:'attack',aiRange:430,color:'#ffd24a',desc:'Draw a card: fire a random damaging ability borrowed from another hero (Fireball, Meteor, Cleave, Power Shot, Judgment...).'},
+      {k:'W',name:'Ignorance is Bliss',cd:12,kind:'dash',dist:320,dur:.2,bliss:1,ai:'escape',color:'#8fe3ff',desc:'Movement: dash forward and become immune to all damage for 1s.'},
       {k:'E',name:'Uncharted Path',cd:14,kind:'portal',range:780,dur:8,r:44,color:'#9a7aff',desc:'Open a two-way portal for 8s: one end beside you, the other up to 780 away in a straight line - straight through walls. You AND your enemies can use it.'},
-      {k:'R',off:true,name:'Leap of Faith',cd:20,kind:'leap',dist:900,phase:true,nova:{r:170,dmg:200},color:'#ff6a9a',desc:'Teleport (range 900, through walls) to ground you CANNOT see and crash down for 200 damage around you. Fails if the spot is in your vision.'},
-      {k:'A',name:'Wheel of Fortune',cd:16,kind:'wheel',color:'#ffe27a',desc:'Spin the wheel: gain a random boon for 6s - speed, power, a shield, a heal or quickened cooldowns.'},
-      {k:'S',name:"Fool's Fortune",cd:14,kind:'fortune',dur:12,color:'#fff2a0',desc:'Your next ability acts as if it were upgraded. If it already is upgraded, it has no cooldown. Lasts 12s.'},
-      {k:'D',name:'Beginner Luck',cd:12,kind:'dodge',dur:8,count:1,color:'#7aff9a',desc:'Dodge the next ability that would hit you (lasts 8s).'},
-      {k:'F',off:true,name:'Manifest Destiny',cd:80,kind:'manifest',dur:20,color:'#ff7aff',ult:true,desc:'ULTIMATE. Become a random hero for 20s: you get their spells, body and speed, and every cooldown is halved. Then you turn back into the Fool.'},
+      {k:'R',off:true,name:'Leap of Faith',cd:20,kind:'leap',dist:900,phase:true,nova:{r:170,dmg:200},ai:'escape',color:'#ff6a9a',desc:'Teleport (range 900, through walls) to ground you CANNOT see and crash down for 200 damage around you. Fails if the spot is in your vision.'},
+      {k:'A',name:'Wheel of Fortune',cd:16,kind:'wheel',ai:'buff',color:'#ffe27a',desc:'Spin the wheel: gain a random boon for 6s - speed, power, a shield, a heal or quickened cooldowns.'},
+      {k:'S',name:"Fool's Fortune",cd:14,kind:'fortune',dur:12,ai:'buff',color:'#fff2a0',desc:'Your next ability acts as if it were upgraded. If it already is upgraded, it has no cooldown. Lasts 12s.'},
+      {k:'D',name:'Beginner Luck',cd:12,kind:'dodge',dur:8,count:1,ai:'defend',color:'#7aff9a',desc:'Dodge the next ability that would hit you (lasts 8s).'},
+      {k:'F',off:true,name:'Manifest Destiny',cd:80,kind:'manifest',dur:20,ai:'buff',color:'#ff7aff',ult:true,desc:'ULTIMATE. Become a random hero for 20s: you get their spells, body and speed, and every cooldown is halved. Then you turn back into the Fool.'},
     ]},
   runekeeper: {
-    name:'Rune Keeper', shape:'runic', c:'#4a6fa5', hp:780, speed:225, pref:300, playerOnly:true,
+    name:'Rune Keeper', shape:'runic', c:'#4a6fa5', hp:780, speed:225, pref:300,
     basic:{name:'Runic Bolt',cd:.65,kind:'proj',speed:800,range:520,pr:7,dmg:24,color:'#9ad7ff',aiRange:470},
-    blurb:'Norse stone-carver. Carve flame, ice, thorn and sun runes into the ground (up to 6), then detonate them, fire them, teleport to one or link them into a prison. Stand on a rune and your basic attacks carry its power. Player-only.',
+    blurb:'Norse stone-carver. Carve flame, ice, thorn and sun runes into the ground (up to 6), then detonate them, fire them, teleport to one or link them into a prison. Stand on a rune and your basic attacks carry its power.',
     spells:[
-      {k:'Q',name:'Place Rune',cd:3.5,kind:'runeplace',range:560,dur:22,max:6,color:'#9ad7ff',desc:'Carve the selected rune into the ground at your cursor. Up to 6 runes at once (a 7th erases the oldest); they last 22s and enemies cannot move or destroy them. While you stand on a rune, your basic attacks are empowered by it.'},
-      {k:'W',name:'Switch Rune',cd:.25,kind:'runeswap',color:'#e8e0c0',desc:'Cycle the selected rune: Kenaz (flame: burn) > Isa (ice: slow + root) > Thurisaz (thorn: blast) > Sowilo (sun: heals you). Standing on a rune empowers your basic attacks: Kenaz burns, Isa slows, Sowilo heals you, and on Thurisaz you gain thorns (attackers take damage).'},
+      {k:'Q',name:'Place Rune',cd:3.5,kind:'runeplace',ai:'runeplace',range:560,dur:22,max:6,color:'#9ad7ff',desc:'Carve the selected rune into the ground at your cursor. Up to 6 runes at once (a 7th erases the oldest); they last 22s and enemies cannot move or destroy them. While you stand on a rune, your basic attacks are empowered by it.'},
+      {k:'W',name:'Switch Rune',cd:.25,kind:'runeswap',ai:'runeswap',color:'#e8e0c0',desc:'Cycle the selected rune: Kenaz (flame: burn) > Isa (ice: slow + root) > Thurisaz (thorn: blast) > Sowilo (sun: heals you). Standing on a rune empowers your basic attacks: Kenaz burns, Isa slows, Sowilo heals you, and on Thurisaz you gain thorns (attackers take damage).'},
       {k:'E',name:'Extend Rune',cd:6,kind:'runeextend',ext:12,max:40,color:'#ffd27a',desc:'Add 12s to the rune nearest your cursor and re-carve it into the selected rune.'},
-      {k:'R',off:true,name:'Detonate',cd:9,kind:'runeboom',mult:1.4,rs:1.25,color:'#ff7a2a',desc:'Explode the rune nearest your cursor with its effect (stronger than a normal blast). The rune is used up.'},
-      {k:'A',off:true,name:'Runic Volley',cd:8,kind:'runevolley',color:'#9ad7ff',desc:'Every placed rune fires a bolt at the nearest enemy (or your cursor) carrying its own effect.'},
+      {k:'R',off:true,name:'Detonate',cd:9,kind:'runeboom',ai:'runeboom',mult:1.4,rs:1.25,color:'#ff7a2a',desc:'Explode the rune nearest your cursor with its effect (stronger than a normal blast). The rune is used up.'},
+      {k:'A',off:true,name:'Runic Volley',cd:8,kind:'runevolley',ai:'runevolley',color:'#9ad7ff',desc:'Every placed rune fires a bolt at the nearest enemy (or your cursor) carrying its own effect.'},
       {k:'S',name:'Rune Gate',cd:18,kind:'runeport',chan:1.5,color:'#c79bff',desc:'Needs a rune. After a 1.5s channel (you cannot act) you teleport onto the rune nearest your cursor.'},
-      {k:'D',off:true,name:'Rune Throw',cd:6,kind:'runethrow',color:'#ffe27a',desc:'Hurl a RANDOM rune. It bursts with its effect when it hits an enemy; if it misses it stays on the ground as one of your runes.'},
-      {k:'F',off:true,name:'Rune Seal',cd:70,kind:'runeseal',dur:9,color:'#ff7a2a',ult:true,desc:'ULTIMATE. Needs 3 runes. Your 3 newest link into a glowing triangle: enemies inside are TRAPPED for 9s while the runes strike them with their effects 3x as fast and hard as before (+30% per extra rune you have placed). The runes then detonate together for a huge finishing blast. The runes cannot expire while it lasts.'},
+      {k:'D',off:true,name:'Rune Throw',cd:6,kind:'runethrow',ai:'attack',aiRange:520,color:'#ffe27a',desc:'Hurl a RANDOM rune. It bursts with its effect when it hits an enemy; if it misses it stays on the ground as one of your runes.'},
+      {k:'F',off:true,name:'Rune Seal',cd:70,kind:'runeseal',ai:'runeseal',dur:9,color:'#ff7a2a',ult:true,desc:'ULTIMATE. Needs 3 runes. Your 3 newest link into a glowing triangle: enemies inside are TRAPPED for 9s while the runes strike them with their effects 3x as fast and hard as before (+30% per extra rune you have placed). The runes then detonate together for a huge finishing blast. The runes cannot expire while it lasts.'},
     ]},
 };
 // Upgraded spell versions picked up from the Upgrade room: [overrides, description]
@@ -719,7 +720,7 @@ let clickMarks=[], showBoard=false;
 let runes=[], portals=[], seals=[], sealSeq=1;   // Rune Keeper runes + seals, the Fool's portals
 const cam={x:0,y:0};
 const mouse={x:0,y:0}, mouseW={x:0,y:0};
-let mouseHeld=false, atkHeld=false, nextHoldPath=0;
+let mouseHeld=false, atkHeld=false, nextHoldPath=0, cLock=null, noMouse=false;   // cLock = enemy locked with C: basic attacks AND spells aim at it
 const keys={};
 // tutorial state (the tutorial itself lives at the bottom of this script)
 const tut={on:false,i:-1,s:null,doneAt:0,tStart:0,f:{},used:new Set(),box:null,dummies:[],bot:null,botAI:null,noSpells:true,noClickMove:false,noteUntil:0,listHtml:'',wasDead:false,charSt:null,charArmed:true,kills:0,goal:5,respawnAt:0,origClass:null,freeze:false};
@@ -2742,6 +2743,12 @@ function botCast(e,b,t,d,los,low){
       case 'summon': ok=d<700&&los; break;
       case 'empower': ok=!e.empower&&d<=CLASSES[e.cls].basic.r+t.r+70; break;
       case 'stealth': ok=now>=e.stealthUntil&&d<520&&d>170; break;
+      // Rune Keeper
+      case 'runeplace': if(d<620&&d>120&&los&&ownerRunes(e).length<5){ ok=true; tx=e.x+(t.x-e.x)*.4; ty=e.y+(t.y-e.y)*.4; } break;
+      case 'runeswap': ok=Math.random()<.12; break;
+      case 'runeboom': { const r=nearestRune(e,t.x,t.y); if(r&&Math.hypot(r.x-t.x,r.y-t.y)<130){ ok=true; tx=r.x; ty=r.y; } break; }
+      case 'runevolley': ok=ownerRunes(e).length>=2&&d<780&&los; break;
+      case 'runeseal': { const own=ownerRunes(e).sort((a,b)=>b.born-a.born).slice(0,3); if(own.length>=3){ const cx=(own[0].x+own[1].x+own[2].x)/3, cy=(own[0].y+own[1].y+own[2].y)/3; ok=inTri(own.map(r=>[r.x,r.y]),t.x,t.y)&&Math.hypot(cx-t.x,cy-t.y)<200; } break; }
     }
     if(!ok) continue;
     if(s.kind==='proj'){ const err=rnd(-BD.err,BD.err), dx=tx-e.x, dy=ty-e.y, c=Math.cos(err), sn=Math.sin(err); tx=e.x+dx*c-dy*sn; ty=e.y+dx*sn+dy*c; }
@@ -2761,6 +2768,10 @@ function update(dt){
     if(mouseHeld&&now>=nextHoldPath&&!player.moveVec){ player.path=findPath(player.x,player.y,mouseW.x,mouseW.y); nextHoldPath=now+.1; }
     const bs=basicOf(player), bspd=bs.kind==='proj'?bs.speed:0;
     if(player.target&&(player.target.dead||!seenBy(player,player.target))) player.target=null;
+    if(noMouse){   // keyboard-only: always fight the closest enemy unless C pinned one
+      if(cLock&&player.target!==cLock) cLock=null;
+      if(!cLock) player.target=closestEnemy(player,1e9);
+    }
     if(player.target){
       const t=player.target;
       if(!fogOn||visiblePt(t.x,t.y,t.r)){
@@ -2769,6 +2780,10 @@ function update(dt){
       }
     }
     if(atkHeld) basicAttack(player,mouseW.x,mouseW.y);
+    if(keys.x){   // X: attack straight ahead (opens doors); with a C lock it aims at the locked enemy instead
+      if(cLock&&!cLock.dead&&cLock===player.target){ const L=lead(player,cLock,bspd,0); basicAttack(player,L.x,L.y); }
+      else basicAttack(player,player.x+Math.cos(player.face)*200,player.y+Math.sin(player.face)*200);
+    }
     if(now>=player.faceLock&&!player.dash){
       if(player.moveVec&&!player.target) player.face=Math.atan2(player.moveVec.y,player.moveVec.x);
       else player.face=Math.atan2(mouseW.y-player.y,mouseW.x-player.x);
@@ -2859,12 +2874,12 @@ function update(dt){
   // camera
   if(player){
     if(!camFree||spectating){ cam.x+=(player.x-cam.x)*Math.min(1,dt*10); cam.y+=(player.y-cam.y)*Math.min(1,dt*10); }
-    else if(state==='playing'&&mouseIn){
+    else if(state==='playing'&&mouseIn&&!noMouse){
       const m=16, sp=900/SC*dt; let px=0,py=0;
       if(mouse.x<m) px=-1; else if(mouse.x>W-m) px=1; if(mouse.y<m) py=-1; else if(mouse.y>H-m) py=1;
       cam.x+=px*sp; cam.y+=py*sp;
     }
-    if(!camFree&&!spectating&&state==='playing'&&mouseIn&&mouseSeen&&(mouse.x<8||mouse.x>W-8||mouse.y<8||mouse.y>H-8)) camFree=true;
+    if(!camFree&&!spectating&&state==='playing'&&mouseIn&&!noMouse&&mouseSeen&&(mouse.x<8||mouse.x>W-8||mouse.y<8||mouse.y>H-8)) camFree=true;
     const hw=W/2/SC, hh=H/2/SC;
     // a little dark padding past the map edge, so edges can be scrolled toward the middle (nobody hides under the minimap / spell bar)
     const pad=170/SC;
@@ -3508,6 +3523,7 @@ function wrapText(s,x,y,maxW,lh){
   ctx.fillText(line,x,y);
 }
 function renderCrosshair(){
+  if(noMouse) return;
   ctx.strokeStyle=GREEN; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(mouse.x,mouse.y,9,0,7); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(mouse.x-15,mouse.y); ctx.lineTo(mouse.x-5,mouse.y); ctx.moveTo(mouse.x+5,mouse.y); ctx.lineTo(mouse.x+15,mouse.y);
@@ -3526,7 +3542,10 @@ function renderHoverRange(){   // hovering a spell slot shows its cast range as 
 }
 function render(){
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
-  mouseW.x=(mouse.x-W/2)/SC+cam.x; mouseW.y=(mouse.y-H/2)/SC+cam.y;
+  if(noMouse&&player&&!spectating){   // aim point = the target, else straight ahead of where the hero faces
+    const t=player.target;
+    if(t&&!t.dead){ mouseW.x=t.x; mouseW.y=t.y; } else { mouseW.x=player.x+Math.cos(player.face)*200; mouseW.y=player.y+Math.sin(player.face)*200; }
+  } else { mouseW.x=(mouse.x-W/2)/SC+cam.x; mouseW.y=(mouse.y-H/2)/SC+cam.y; }
   if(fogOn&&player) computeVision();
   renderWorld(); if(fogOn&&player) renderFog(); renderHoverRange(); renderHUD();
   if(duelCD()){   // big 3-2-1 before the duel starts (everyone sees it, also online)
@@ -3548,7 +3567,7 @@ function render(){
    ============================================================ */
 let KEYMAP={q:0,w:1,e:2,r:3,a:4,s:5,d:6,f:7};
 /* ---- rebindable spell keys (saved per hero) ---- */
-const NO_BIND=new Set(['escape','p','m','tab','h','c',' ','1','2','3','shift','control','alt','meta','capslock','enter','backspace','delete']);
+const NO_BIND=new Set(['escape','p','m','tab','h','c','x',' ','1','2','3','shift','control','alt','meta','capslock','enter','backspace','delete']);
 const memBinds={}, memLoadout={};   // loadout choices live only until the page is reloaded (nothing is saved to the browser)
 function loadBinds(){ return memBinds; }
 function bindsFor(cls){
@@ -3674,24 +3693,51 @@ addEventListener('keydown',ev=>{
   if(k==='tab'){ ev.preventDefault(); showBoard=true; return; }
   if(pendingBless&&(k==='1'||k==='2'||k==='3')){ chooseBless(+k-1); return; }
   if(k==='h'){ blessHidden=!blessHidden; updateBlessUI(); return; }
-  if((k==='c'||k===' ')&&!spectating&&player){ ev.preventDefault(); camFree=false; cam.x=player.x; cam.y=player.y; return; }
+  if(k==='c'&&!spectating&&player&&!player.dead&&state==='playing'&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey){
+    ev.preventDefault(); if(ev.repeat) return;
+    cLock=closestEnemy(player,1e9); player.target=cLock; atkHeld=false;   // no enemy in sight: clears the lock
+    return;
+  }
+  if(k===' '&&!spectating&&player){ ev.preventDefault(); camFree=false; cam.x=player.x; cam.y=player.y; return; }
   if(spectating){
     if(k.startsWith('arrow')){ ev.preventDefault(); if(!ev.repeat) specCycle(k==='arrowleft'||k==='arrowup'?-1:1); }
     else if(k==='f'&&!ev.repeat){ specAuto=!specAuto; specNext=0; }
     return;
   }
   if(k.startsWith('arrow')||k===' '){ ev.preventDefault(); keys[k]=true; return; }
+  if(k==='x'&&!ev.ctrlKey&&!ev.metaKey&&!ev.altKey){ keys.x=true; return; }   // held: repeats the basic attack
+  if(noMouse&&(k==='+'||k==='='||k==='-'||k==='_')&&KEYMAP[k]===undefined){ zoom=clamp(zoom*(k==='-'||k==='_'?1/1.15:1.15),.55,1.8); SC=BASE_SC*zoom; return; }
   if(ev.ctrlKey||ev.metaKey||ev.altKey) return;
   if(state==='playing'&&!ev.repeat){
     let si=KEYMAP[k]; const xj=(player&&player.xk)?player.xk.indexOf(k):-1; if(xj>=0) si=8+xj;
-    if(si!==undefined) castSpell(player,si,mouseW.x,mouseW.y);
+    if(si!==undefined){
+      let ax=mouseW.x, ay=mouseW.y;
+      if(cLock&&(cLock.dead||!seenBy(player,cLock)||(fogOn&&!visiblePt(cLock.x,cLock.y,cLock.r)))) cLock=null;
+      if(cLock&&player&&cLock!==player.target) cLock=null;   // the lock was replaced (left-click) or dropped
+      const tgt=cLock||(noMouse&&player.target&&!player.target.dead?player.target:null);
+      if(tgt){
+        const sp=spellOf(player,si);
+        if(sp&&(sp.kind==='blink'||sp.kind==='dash'||sp.kind==='leap')){   // movement spells ignore the lock: full distance, the way you are looking
+          const a=noMouse?(player.moveVec?Math.atan2(player.moveVec.y,player.moveVec.x):player.face):Math.atan2(mouseW.y-player.y,mouseW.x-player.x), d=sp.dist||300;
+          ax=player.x+Math.cos(a)*d; ay=player.y+Math.sin(a)*d;
+        } else { const L=lead(player,tgt,(sp&&sp.speed)||0,0); ax=L.x; ay=L.y; }
+      } else if(noMouse){   // nobody to aim at: movement spells go the way you move / face, others straight ahead
+        const sp=spellOf(player,si), a=player.moveVec?Math.atan2(player.moveVec.y,player.moveVec.x):player.face, d=(sp&&sp.dist)||300;
+        ax=player.x+Math.cos(a)*d; ay=player.y+Math.sin(a)*d;
+      }
+      castSpell(player,si,ax,ay);
+    }
   }
 });
-addEventListener('keyup',ev=>{ const k=ev.key.toLowerCase(); delete keys[k]; if(k==='tab') showBoard=false; });
-addEventListener('blur',()=>{ for(const k in keys) delete keys[k]; mouseHeld=false; atkHeld=false; showBoard=false; });
+addEventListener('keyup',ev=>{ const k=ev.key.toLowerCase(); delete keys[k]; if(k==='tab') showBoard=false;
+  if(player&&player.isPlayer&&player.medOn){   // Meditate is hold-to-channel: letting go of its key stops it
+    let si=KEYMAP[k]; const xj=player.xk?player.xk.indexOf(k):-1; if(xj>=0) si=8+xj;
+    const sp=si!==undefined?spellOf(player,si):null; if(sp&&sp.kind==='channel') player.medOn=false;
+  } });
+addEventListener('blur',()=>{ if(player&&player.isPlayer) player.medOn=false; for(const k in keys) delete keys[k]; mouseHeld=false; atkHeld=false; showBoard=false; });
 cv.addEventListener('mousemove',ev=>{ mouse.x=ev.clientX; mouse.y=ev.clientY; mouseSeen=true; });
 cv.addEventListener('contextmenu',ev=>ev.preventDefault());
-cv.addEventListener('wheel',ev=>{ ev.preventDefault(); zoom=clamp(zoom*Math.exp(-ev.deltaY*.0012),.55,1.8); SC=BASE_SC*zoom; },{passive:false});
+cv.addEventListener('wheel',ev=>{ ev.preventDefault(); if(noMouse) return; zoom=clamp(zoom*Math.exp(-ev.deltaY*.0012),.55,1.8); SC=BASE_SC*zoom; },{passive:false});
 cv.addEventListener('mouseleave',()=>{ mouseIn=false; });
 cv.addEventListener('mouseenter',()=>{ mouseIn=true; });
 cv.addEventListener('mousedown',ev=>{
@@ -3702,7 +3748,7 @@ cv.addEventListener('mousedown',ev=>{
     if(best){ player=best; specAuto=false; }
     return;
   }
-  if(state!=='playing'||!player||player.dead||hudHover()>=0) return;
+  if(state!=='playing'||!player||player.dead||noMouse||hudHover()>=0) return;
   mouseW.x=(mouse.x-W/2)/SC+cam.x; mouseW.y=(mouse.y-H/2)/SC+cam.y;
   if(ev.button===2){
     mouseHeld=true; nextHoldPath=now+.1;
@@ -3818,6 +3864,8 @@ document.getElementById('wNext').onclick=()=>{
 
 function startGame(){
   document.getElementById('loadout').classList.add('hidden');
+  noMouse=document.getElementById('loNoMouse').checked; cLock=null;
+  if(noMouse){ zoom=.55; SC=BASE_SC*zoom; }   // keyboard-only: start fully zoomed out
   spellCount=+document.getElementById('spells').value;
   training=modeEl.value==='train'; spectating=modeEl.value==='spec';
   const duel=modeEl.value==='duel', tsz=duel?+document.getElementById('tsize').value:1; teamMode=duel; teamScore=[0,0]; specAuto=true; specNext=0;
@@ -4182,7 +4230,7 @@ function tutDoneFx(){
 }
 function tutTick(dt){
   const s=tut.s; if(!s||!player) return;
-  if(player.medOn){ tut.medT=(tut.medT||0)+dt; if(tut.medT>3&&!tut.medHint){ tut.medHint=true; tutNote('You are channeling: you cannot cast or attack until you stop. Press the spell key <b>again</b> to stop.'); } } else { tut.medT=0; tut.medHint=false; }
+  if(player.medOn){ tut.medT=(tut.medT||0)+dt; if(tut.medT>3&&!tut.medHint){ tut.medHint=true; tutNote('You are channeling: you cannot cast or attack until you stop. <b>Release</b> the spell key to stop (hold it to keep channeling).'); } } else { tut.medT=0; tut.medHint=false; }
   if(tut.noClickMove){ player.path=[]; mouseHeld=false; }
   if(tut.doneAt){ if(now-tut.doneAt>=1.6) tutNext(); }
   else {
@@ -4197,7 +4245,7 @@ function tutTick(dt){
 /* ---------- start / finish / exit ---------- */
 function tutStart(){
   document.getElementById('loadout').classList.add('hidden');
-  spellCount=5; training=true; spectating=false; teamMode=false; teamScore=[0,0]; specAuto=true; specNext=0;
+  noMouse=false; cLock=null; spellCount=5; training=true; spectating=false; teamMode=false; teamScore=[0,0]; specAuto=true; specNext=0;
   noCd=false; fogOn=false; killLimit=Infinity; BD=TUT_BD;
   cv.style.cursor='none';
   blessing=null; pendingBless=null; blessHidden=false; announceUntil=0; updateBlessUI();
