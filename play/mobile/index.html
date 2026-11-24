@@ -3739,7 +3739,7 @@ addEventListener('keydown',ev=>{
 addEventListener('keydown',ev=>{
   if(state!=='playing'&&state!=='paused') return;
   const k=ev.key.toLowerCase();
-  if(k==='escape'||k==='p'){ state=state==='playing'?'paused':'playing'; return; }
+  if(k==='escape'||k==='p'){ state=state==='playing'?'paused':'playing'; if(state==='paused'){ announceUntil=0; for(const f of feed) f.t0=-99; if(typeof noteUntil!=='undefined') noteUntil=0; } return; }
   if(k==='m'&&state==='paused'){ pendingBless=null; updateBlessUI(); state='menu'; document.getElementById('menu').classList.remove('hidden'); return; }
   if(k==='tab'){ ev.preventDefault(); showBoard=true; return; }
   if(pendingBless&&(k==='1'||k==='2'||k==='3')){ chooseBless(+k-1); return; }
@@ -4013,7 +4013,7 @@ function startGame(){
   state='playing';
 }
 function endGame(w){
-  state='over'; winner=w; pendingBless=null; updateBlessUI();
+  state='over'; announceUntil=0; for(const f of feed) f.t0=-99; if(typeof noteUntil!=='undefined') noteUntil=0; winner=w; pendingBless=null; updateBlessUI();
   const me=teamMode?(!!player&&w.team===player.team):(!spectating&&w===player);
   document.getElementById('overTitle').textContent=spectating?w.name.toUpperCase()+' WINS':me?'VICTORY!':teamMode?'DEFEAT':'GAME OVER';
   document.getElementById('overSub').textContent=teamMode?(me?'Your team':'The enemy team')+' reached '+killLimit+' kills ('+teamScore[0]+' - '+teamScore[1]+').':(me?'You reached ':w.name+' reached ')+killLimit+' kills.';
@@ -4355,7 +4355,7 @@ function tutStart(){
   tutGo(0);
 }
 function tutFinish(){
-  state='over'; cv.style.cursor='default'; tg('tut').style.display='none'; tg('tutEnd').classList.remove('hidden');
+  state='over'; announceUntil=0; for(const f of feed) f.t0=-99; if(typeof noteUntil!=='undefined') noteUntil=0; cv.style.cursor='default'; tg('tut').style.display='none'; tg('tutEnd').classList.remove('hidden');
 }
 function tutCleanup(){
   tut.on=false; tut.s=null; tut.noSpells=true; tut.noClickMove=false; tut.freeze=false;
