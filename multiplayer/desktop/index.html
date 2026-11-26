@@ -617,7 +617,7 @@ const CLASSES = {
       {k:'A',off:true,name:'Runic Volley',cd:8,kind:'runevolley',ai:'runevolley',color:'#9ad7ff',desc:'Every rune - including marks on enemy champions - fires a big, heavy-hitting bolt at the nearest enemy (or your cursor) carrying its own effect. A bolt fired from a mark flies off the marked champion at another target (or bursts on them if they are alone).'},
       {k:'S',name:'Rune Gate',cd:18,kind:'runeport',chan:1.5,color:'#c79bff',desc:'Needs a rune. After a 1.5s channel (you cannot act) you teleport onto the rune nearest your cursor - a mark on an enemy champion works too, and you land on them wherever they go.'},
       {k:'D',off:true,name:'Rune Throw',cd:6,kind:'runethrow',ai:'attack',aiRange:520,color:'#ffe27a',desc:'Hurl a RANDOM rune. It bursts with its effect when it hits an enemy; if it misses it stays on the ground as one of your runes.'},
-      {k:'F',off:true,name:'Rune Seal',cd:70,kind:'runeseal',ai:'runeseal',dur:9,color:'#ff7a2a',ult:true,desc:'ULTIMATE. Needs 3 runes. Your 3 newest link into a glowing triangle: enemies inside are TRAPPED for 9s while the runes strike them with their effects 3x as fast and hard as before (+30% per extra rune you have placed). The runes then detonate together for a huge finishing blast. The runes cannot expire while it lasts. A mark on an enemy champion can be a corner: when they move the seal stretches with them, growing the trap and the damage area.'},
+      {k:'F',off:true,name:'Rune Seal',cd:70,kind:'runeseal',ai:'runeseal',dur:3,color:'#ff7a2a',ult:true,desc:'ULTIMATE. Needs 3 runes. Your 3 newest link into a glowing triangle: enemies inside are TRAPPED for 3s while the runes strike them with their effects once a second (3 strikes, each at 46% power) (+30% per extra rune you have placed). The runes then detonate together for a huge finishing blast. The runes cannot expire while it lasts. A mark on an enemy champion can be a corner: when they move the seal stretches with them, growing the trap and the damage area.'},
     ]},
 };
 // Upgraded spell versions picked up from the Upgrade room: [overrides, description]
@@ -861,7 +861,7 @@ function respawn(e,first){
   if(e.realCls) endManifest(e);
   clearForm(e);
   e.rootUntil=e.thornUntil=e.regenUntil=e.avatarUntil=e.revealUntil=0;
-  e.fortuneUntil=e.dodgeUntil=e.dodgeGrace=e.ptCd=e.sealUntil=0; e.tele=null;
+  e.fortuneUntil=e.dodgeUntil=e.dodgeGrace=e.ptCd=e.sealUntil=0; e.ptLock=false; e.tele=null;
   const p=spawnPoint(e);
   e.x=e.px=p.x; e.y=e.py=p.y; e.hp=e.maxHp; e.dead=false; e.path=[]; e.dash=null; e.spin=null;
   e.stunUntil=e.slowUntil=e.hasteUntil=e.shieldUntil=e.drUntil=e.burnUntil=0; e.shield=0;
@@ -1555,6 +1555,24 @@ function inAoe(x,y,r,t){
   }
   return false;
 }
+// run a shape test on a target, and again on where it would stand through each portal mouth it touches (so every area reaches through portals)
+function viaPortal(t,fn){
+  if(fn(t)) return true;
+  for(const p of portals){
+    if(Math.hypot(t.x-p.bx,t.y-p.by)<p.r+t.r&&fn({x:t.x+p.ax-p.bx,y:t.y+p.ay-p.by,r:t.r})) return true;
+    if(Math.hypot(t.x-p.ax,t.y-p.ay)<p.r+t.r&&fn({x:t.x+p.bx-p.ax,y:t.y+p.by-p.ay,r:t.r})) return true;
+  }
+  return false;
+}
+// copies of a ground area that show through the portal mouths it touches
+function zoneMirrors(z){
+  const o=[]; if(!portals.length) return o;
+  for(const p of portals){
+    if(Math.hypot(z.x-p.ax,z.y-p.ay)<p.r+z.r) o.push({dx:p.bx-p.ax,dy:p.by-p.ay,cx:p.bx,cy:p.by,r:p.r*1.2});
+    if(Math.hypot(z.x-p.bx,z.y-p.by)<p.r+z.r) o.push({dx:p.ax-p.bx,dy:p.ay-p.by,cx:p.ax,cy:p.ay,r:p.r*1.2});
+  }
+  return o;
+}
 function echoFx(x,y,r,col){
   for(const p of portals){
     const a=Math.hypot(x-p.ax,y-p.ay)<p.r+r, b=Math.hypot(x-p.bx,y-p.by)<p.r+r;
@@ -1606,7 +1624,7 @@ function updateRunes(dt){
   for(const r of runes) if(Math.random()<.12) spark(r.x+rnd(-18,18),r.y+rnd(-10,10),rnd(-6,6),rnd(-50,-20),RUNES[r.type].col,rnd(1.5,3),.8);
   for(let i=seals.length-1;i>=0;i--){
     const q=seals[i];
-    if(now>=q.until||q.owner.dead){ if(!q.owner.dead) q.types.forEach((ty,j)=>runeBlast(q.owner,ty,q.pts[j][0],q.pts[j][1],1.8*q.pow,1.4)); const cx=(q.pts[0][0]+q.pts[1][0]+q.pts[2][0])/3, cy=(q.pts[0][1]+q.pts[1][1]+q.pts[2][1])/3; fxRing(cx,cy,120,'#f1e2a4',.5); burst(cx,cy,'#f1e2a4',20,260,.6,4); seals.splice(i,1); continue; }
+    if(now>=q.until||q.owner.dead){ if(!q.owner.dead) q.types.forEach((ty,j)=>runeBlast(q.owner,ty,q.pts[j][0],q.pts[j][1],1.25*q.pow,1.4)); const cx=(q.pts[0][0]+q.pts[1][0]+q.pts[2][0])/3, cy=(q.pts[0][1]+q.pts[1][1]+q.pts[2][1])/3; fxRing(cx,cy,120,'#f1e2a4',.5); burst(cx,cy,'#f1e2a4',20,260,.6,4); seals.splice(i,1); continue; }
     if(q.refs) q.pts=q.refs.map(r=>[r.x,r.y]);
     for(const t of ents){   // the trap follows the (moving) corners: newly enclosed enemies are caught, left-behind ones are freed
       if(t.dead||t===q.owner) continue;
@@ -1616,12 +1634,12 @@ function updateRunes(dt){
       else if(ins) t.sealUntil=q.until;
     }
     if(now>=q.next){
-      q.next+=.4;
+      q.next+=1;
       const inside=foes(q.owner).filter(t=>inSeal(q,t));
       q.types.forEach((ty,j)=>{
-        const R=RUNES[ty], f=runeFx(R,.66*q.pow), px=q.pts[j][0], py=q.pts[j][1]; delete f.mark;
+        const R=RUNES[ty], f=runeFx(R,.46*q.pow), px=q.pts[j][0], py=q.pts[j][1]; delete f.mark;
         burst(px,py,R.col,6,120,.35,3);
-        for(const t of inside){ fxTrail(px,py,t.x,t.y,R.col); hit(q.owner,t,R.dmg*.66*q.pow,f); }
+        for(const t of inside){ fxTrail(px,py,t.x,t.y,R.col); hit(q.owner,t,R.dmg*.46*q.pow,f); }
         if(R.heal&&!q.owner.dead) q.owner.hp=Math.min(q.owner.maxHp,q.owner.hp+50);
       });
     }
@@ -1629,6 +1647,7 @@ function updateRunes(dt){
 }
 function updatePortals(){
   portals=portals.filter(p=>now<p.until);
+  for(const t of ents) t.ptIn=false;
   for(const p of portals){
     if(Math.random()<.5){ const a=rnd(0,6.28), k=Math.random()<.5; spark((k?p.ax:p.bx)+Math.cos(a)*p.r,(k?p.ay:p.by)+Math.sin(a)*p.r,-Math.cos(a)*40,-Math.sin(a)*40,p.color,2.5,.5); }
     for(const pr of projectiles){
@@ -1643,14 +1662,15 @@ function updatePortals(){
     for(const t of ents){
       if(t.dead||t.isBox||flies(t)||t.dash) continue;
       const inA=Math.hypot(t.x-p.ax,t.y-p.ay)<p.r, inB=Math.hypot(t.x-p.bx,t.y-p.by)<p.r;
-      if(now<t.ptCd){ if(inA||inB) t.ptCd=Math.max(t.ptCd,now+.15); continue; }
+      if(t.ptLock){ if(inA||inB) t.ptIn=true; continue; }   // you must step fully out of every mouth before one can take you again
       if(!inA&&!inB) continue;
       const fx0=inA?p.ax:p.bx, fy0=inA?p.ay:p.by, tx0=inA?p.bx:p.ax, ty0=inA?p.by:p.ay;
       burst(fx0,fy0,p.color,12,200,.4,3.5); fxRing(fx0,fy0,p.r,p.color,.3);
-      t.x=t.px=tx0; t.y=t.py=ty0; t.path=[]; t.ptCd=now+1.5;
+      t.x=t.px=tx0; t.y=t.py=ty0; t.path=[]; t.ptLock=t.ptIn=true;
       burst(tx0,ty0,p.color,14,220,.45,3.5); fxRing(tx0,ty0,p.r,p.color,.35); fxFlash(tx0,ty0,40,'#ffffff',.15);
     }
   }
+  for(const t of ents) if(t.ptLock&&!t.ptIn) t.ptLock=false;
 }
 function dodged(t,src){
   if(now<t.dodgeGrace&&t.dodgeBy===src) return true;
@@ -1696,15 +1716,15 @@ const K={
     if(bn(s.name)==='Earthquake'){ floorX.strokeStyle='rgba(50,34,16,.55)'; floorX.lineWidth=2.5;
       for(let i=0;i<12;i++){ const a=rnd(0,6.28), l=s.r*rnd(.4,1); floorX.beginPath(); floorX.moveTo(e.x,e.y);
         floorX.lineTo(e.x+Math.cos(a)*l*.5+rnd(-8,8),e.y+Math.sin(a)*l*.5+rnd(-8,8)); floorX.lineTo(e.x+Math.cos(a)*l,e.y+Math.sin(a)*l); floorX.stroke(); } }
-    for(const t of foes(e)) if(dst(e,t)<=s.r+t.r) hit(e,t,s.dmg,s);
+    echoFx(e.x,e.y,s.r,s.color);
+    for(const t of foes(e)) if(viaPortal(t,u=>dst(e,u)<=s.r+t.r)) hit(e,t,s.dmg,s);
   },
   cone(e,s,a){
     fxSlash(e.x,e.y,a,s.arc,s.r,s.color,.22,e.swingDir||1); if(e!==player) effects[effects.length-1].en=1; meleeDoors(e,s,a,s.arc);
+    echoFx(e.x,e.y,s.r,s.color);
     for(const t of foes(e)){
       if(flies(t)) continue;
-      const d=dst(e,t); if(d>s.r+t.r) continue;
-      let da=Math.atan2(t.y-e.y,t.x-e.x)-a; da=Math.atan2(Math.sin(da),Math.cos(da));
-      if(Math.abs(da)>s.arc/2+Math.atan2(t.r,Math.max(d,1))) continue;
+      if(!viaPortal(t,u=>{ const d=dst(e,u); if(d>s.r+t.r) return false; let da=Math.atan2(u.y-e.y,u.x-e.x)-a; da=Math.atan2(Math.sin(da),Math.cos(da)); return Math.abs(da)<=s.arc/2+Math.atan2(t.r,Math.max(d,1)); })) continue;
       let dmg=s.dmg; if(s.exec&&t.hp<t.maxHp*s.exec.thr) dmg*=s.exec.mult;
       hit(e,t,dmg,s);
     }
@@ -1811,7 +1831,7 @@ const K={
     const ax=e.x, ay=e.y;   // one end is right under you, so facing a wall never blocks it
     portals=portals.filter(p=>p.owner!==e);
     portals.push({ax,ay,bx:e.x+c*best,by:e.y+sn*best,r:s.r,owner:e,start:now,until:now+s.dur,color:s.color});
-    e.ptCd=now+1;   // standing in the mouth you just opened does not throw you through it
+    e.ptLock=true;   // standing in the mouth you just opened does not throw you through it until you step out of it
     fxRing(ax,ay,s.r*1.4,s.color,.5); fxRing(e.x+c*best,e.y+sn*best,s.r*1.4,s.color,.5); burst(ax,ay,s.color,16,200,.5,3.5); burst(e.x+c*best,e.y+sn*best,s.color,16,200,.5,3.5);
   },
   leap(e,s,a,tx,ty){
@@ -1885,7 +1905,7 @@ const K={
   runeseal(e,s){
     const own=allRunes(e).sort((a,b)=>b.born-a.born).slice(0,3);
     if(own.length<3){ floaters.push({x:e.x,y:e.y-38,v:0,txt:'needs 3 runes',t0:now,last:now,col:s.color}); return false; }
-    const q={id:sealSeq++,refs:own,pts:own.map(r=>[r.x,r.y]),types:own.map(r=>r.type),owner:e,start:now,until:now+s.dur,next:now+.4,pow:1+.3*Math.max(0,allRunes(e).length-3)};
+    const q={id:sealSeq++,refs:own,pts:own.map(r=>[r.x,r.y]),types:own.map(r=>r.type),owner:e,start:now,until:now+s.dur,next:now,pow:1+.3*Math.max(0,allRunes(e).length-3)};
     seals.push(q);
     for(const t of foes(e)) if(inSeal(q,t)){ t.sealId=q.id; t.sealUntil=q.until; t.path=[]; }
     for(const r of own) r.until=Math.max(r.until,q.until+.8);
@@ -1931,7 +1951,7 @@ function dmgText(s){
     case 'runeboom': t=runes(s.mult)+' in a blast 25% wider (Kenaz also burns)'; break;
     case 'runevolley': t='each rune fires a bolt worth 110% of its damage ('+runes(1.1)+')'; break;
     case 'runethrow': t='a random rune bursts for 85% of its damage ('+runes(.85)+')'; break;
-    case 'runeseal': t='every 0.4s each rune strikes trapped enemies for 66% of its damage, then a final blast of 180% ('+runes(1.8)+')'; break;
+    case 'runeseal': t='every 1s (3 times) each rune strikes trapped enemies for 46% of its damage, then a final blast of 125% ('+runes(1.25)+')'; break;
     case 'runeplace': t='each rune you stand on stacks onto your basic attacks: Kenaz +14 and 16 burn/s, Isa +12 and a slow, Sowilo heals 28, Thurisaz (lightning) +8 and speed'; break;
     case 'channel': t='builds up to +'+Math.round(s.max*100)+'% damage on all your attacks'; break;
     case 'buff':
@@ -2770,7 +2790,7 @@ function updateEnt(e,dt){
   if(e.recastUntil&&now>=e.recastUntil){ e.recastUntil=0; if(e.cd[7]<=now+.5) e.cd[7]=now+e.recastFull; }
   if(e.aura){
     if(now>=e.aura.until) e.aura=null;
-    else for(const t of foes(e)) if(dst(e,t)<=e.aura.r+t.r){
+    else for(const t of foes(e)) if(viaPortal(t,u=>dst(e,u)<=e.aura.r+t.r)){
       const before=t.hp; damage(t,e.aura.dps*dt,e); if(!t.isBox){ e.hp=Math.min(e.maxHp,e.hp+Math.max(0,before-t.hp)*.8); if(Math.random()<.3) spark(t.x,t.y,(e.x-t.x)*2,(e.y-t.y)*2,e.aura.color,2.5,.4); }
     }
   }
@@ -2778,7 +2798,7 @@ function updateEnt(e,dt){
     if(now>=e.spin.until) e.spin=null;
     else if(now>=e.spin.next){
       e.spin.next+=e.spin.tick; const s=e.spin.s;
-      for(const t of foes(e)) if(dst(e,t)<=s.r+t.r) hit(e,t,s.dmg,s);
+      for(const t of foes(e)) if(viaPortal(t,u=>dst(e,u)<=s.r+t.r)) hit(e,t,s.dmg,s);
     }
   }
   if(e.dash){
@@ -3012,7 +3032,8 @@ function update(dt){
     const z=zones[i];
     if(z.type==='impact'){
       const mp=meteorPos(z);
-      if(mp){ spark(mp.x,mp.y,rnd(-40,40),rnd(-40,40),'#ffb23a',rnd(4,8),.4); spark(mp.x,mp.y,rnd(-40,40),rnd(-40,40),'#ff5a1a',rnd(4,8),.4); }
+      if(mp){ spark(mp.x,mp.y,rnd(-40,40),rnd(-40,40),'#ffb23a',rnd(4,8),.4); spark(mp.x,mp.y,rnd(-40,40),rnd(-40,40),'#ff5a1a',rnd(4,8),.4);
+        for(const m of zoneMirrors(z)){ spark(mp.x+m.dx,mp.y+m.dy,rnd(-40,40),rnd(-40,40),'#ffb23a',rnd(4,8),.4); spark(mp.x+m.dx,mp.y+m.dy,rnd(-40,40),rnd(-40,40),'#ff5a1a',rnd(4,8),.4); } }
       if(now>=z.at){
         impactFx(z); echoFx(z.x,z.y,z.r,z.s.color);
         for(const t of foes(z.owner)) if(inAoe(z.x,z.y,z.r,t)) hit(z.owner,t,z.s.dmg,z.s);
@@ -3021,6 +3042,8 @@ function update(dt){
     } else {
       if(now>=z.until){ zones.splice(i,1); continue; }
       zoneParts(z);
+      for(const m of zoneMirrors(z)){ const z2={...z,x:z.x+m.dx,y:z.y+m.dy}, reps=Math.min(10,Math.ceil(z.r*z.r/(m.r*m.r)));
+        for(let k=0;k<reps;k++){ const n0=parts.length; zoneParts(z2); for(let j=parts.length-1;j>=n0;j--) if(Math.hypot(parts[j].x-m.cx,parts[j].y-m.cy)>m.r) parts.splice(j,1); } }
       for(const t of foes(z.owner)) if(inAoe(z.x,z.y,z.r,t)){
         damage(t,z.s.dps*dt,z.owner); if(z.s.slow) slow(t,z.s.slow[0],z.s.slow[1]);
         if(z.s.curse) t.curseUntil=Math.max(t.curseUntil,now+1);
@@ -3273,12 +3296,6 @@ function drawMarks(e,x,y){
   }
 }
 function drawGroundMagic(){
-  for(const z of zones) if(z.type==='impact'&&portals.length){
-    for(const p of portals){
-      const a=Math.hypot(z.x-p.ax,z.y-p.ay)<p.r+z.r, b=Math.hypot(z.x-p.bx,z.y-p.by)<p.r+z.r;
-      for(const [on,cx,cy] of [[a,p.bx,p.by],[b,p.ax,p.ay]]) if(on){ const pg=clamp((now-z.start)/(z.at-z.start),0,1); ctx.save(); ctx.strokeStyle=z.s.color; ctx.lineWidth=3; ctx.globalAlpha=.5+.3*Math.sin(now*14); ctx.setLineDash([6,5]); ctx.beginPath(); ctx.arc(cx,cy,p.r*1.7,0,7); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=.15+.3*pg; ctx.fillStyle=z.s.color; ctx.fill(); ctx.restore(); }
-    }
-  }
   for(const q of seals) drawSeal(q);
   for(const p of portals) if(p.owner) drawPortal(p);
   for(const r of runes){
@@ -3384,11 +3401,9 @@ function renderWorld(){
   }
   // zones
   for(const z of zones){
-    if(z.type==='impact'){
-      drawImpact(z);
-    } else {
-      drawZone(z);
-    }
+    const dz=q=>{ if(q.type==='impact') drawImpact(q); else drawZone(q); };
+    dz(z);
+    for(const m of zoneMirrors(z)){ ctx.save(); ctx.beginPath(); ctx.arc(m.cx,m.cy,m.r,0,7); ctx.clip(); ctx.translate(m.dx,m.dy); dz(z); ctx.restore(); }
     if(z.owner!==player){ ctx.strokeStyle='rgba(255,60,60,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(z.x,z.y,z.r+4,0,7); ctx.stroke(); }
   }
   drawGroundMagic();
@@ -3450,7 +3465,7 @@ function renderWorld(){
   for(const g of ghosts){ ctx.save(); ctx.globalAlpha=(1-(now-g.t0)/.3)*.4; ctx.translate(g.x,g.y); drawBody(ctx,g.cls,g.color,24,g.face); ctx.restore(); }
   for(const e of ents) if(!e.dead&&(e===player||!fogOn||visiblePt(e.x,e.y,e.r))&&(e===player||seenBy(player,e))) drawEnt(e);
   for(const b of beasts) if(b.owner===player||!fogOn||visiblePt(b.x,b.y,b.r)) drawBeast(b);
-  for(const z of zones) if(z.type==='impact') drawMeteor(z);
+  for(const z of zones) if(z.type==='impact'){ drawMeteor(z); for(const m of zoneMirrors(z)){ ctx.save(); ctx.translate(m.dx,m.dy); drawMeteor(z); ctx.restore(); } }
   if(player&&player.target&&!player.target.dead&&(!fogOn||visiblePt(player.target.x,player.target.y,player.target.r))){
     const t=player.target, ty=t.y-t.r-30+Math.sin(now*6)*2;
     ctx.strokeStyle='#ff4040'; ctx.lineWidth=2.5; ctx.setLineDash([6,5]); ctx.lineDashOffset=-now*25; ctx.beginPath(); ctx.arc(t.x,t.y,t.r+9,0,7); ctx.stroke(); ctx.setLineDash([]);
@@ -3892,6 +3907,14 @@ addEventListener('keydown',ev=>{
   if(j>=0) b[j]=b[bindWait];
   b[bindWait]=k; saveBinds(selClass,b); bindWait=-1; rebuildKeymap(); buildCards(); renderLoadout();
 },true);
+// LEFT ALT (left of space): switch between mouse controls and arrows-only (keyboard) controls while playing
+addEventListener('keydown',ev=>{
+  if(ev.code!=='AltLeft') return;
+  ev.preventDefault();
+  if(ev.repeat||state!=='playing'||spectating||!player) return;
+  noMouse=!noMouse; cLock=null; mouseHeld=false; atkHeld=false; player.path=[]; if(noMouse) camFree=false;
+},true);
+addEventListener('keyup',ev=>{ if(ev.code==='AltLeft') ev.preventDefault(); },true);
 addEventListener('keydown',ev=>{
   if(state!=='playing'&&state!=='paused') return;
   const k=ev.key.toLowerCase();
