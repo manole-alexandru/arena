@@ -541,7 +541,7 @@ const CLASSES = {
     spells:[
       {k:'Q',off:true,name:'Wild Card',cd:4,kind:'wildcard',ai:'attack',aiRange:430,color:'#ffd24a',desc:'Draw a card: fire a random damaging ability borrowed from another hero (Fireball, Meteor, Cleave, Power Shot, Judgment...).'},
       {k:'W',name:'Ignorance is Bliss',cd:12,kind:'dash',dist:320,dur:.2,bliss:1,ai:'escape',color:'#8fe3ff',desc:'Movement: dash forward and become immune to all damage for 1s.'},
-      {k:'E',name:'Uncharted Path',cd:14,kind:'portal',range:780,dur:8,r:44,color:'#9a7aff',desc:'Open a two-way portal for 8s: one end beside you, the other up to 780 away in a straight line - straight through walls. You AND your enemies can use it, and so can projectiles. Area spells (Meteor, Judgment, explosions) that touch one end also hit the other end.'},
+      {k:'E',name:'Uncharted Path',cd:14,kind:'portal',range:780,dur:8,r:44,color:'#9a7aff',desc:'Open a two-way portal for 8s: one end under you, the other at your cursor (up to 780 away) - straight through walls. You AND your enemies can use it, and so can projectiles. Area spells (Meteor, Judgment, explosions) that touch one end also hit the other end.'},
       {k:'R',off:true,name:'Leap of Faith',cd:20,kind:'leap',dist:900,phase:true,nova:{r:170,dmg:200},ai:'escape',color:'#ff6a9a',desc:'Teleport (range 900, through walls) to ground you CANNOT see and crash down for 200 damage around you. Fails if the spot is in your vision.'},
       {k:'A',name:'Wheel of Fortune',cd:16,kind:'wheel',ai:'buff',color:'#ffe27a',desc:'Spin the wheel: gain a random boon for 6s - speed, power, a shield, a heal or quickened cooldowns.'},
       {k:'S',name:"Fool's Fortune",cd:14,kind:'fortune',dur:12,ai:'buff',color:'#fff2a0',desc:'Your next ability acts as if it were upgraded. If it already is upgraded, it has no cooldown. Lasts 12s.'},
@@ -1744,15 +1744,15 @@ const K={
     fxRing(e.x,e.y,46,s.color,.35);
   },
   portal(e,s,a,tx,ty){
-    const c=Math.cos(a), sn=Math.sin(a), want=Math.min(s.range,Math.max(200,Math.hypot(tx-e.x,ty-e.y)));
+    const c=Math.cos(a), sn=Math.sin(a), want=Math.min(s.range,Math.max(100,Math.hypot(tx-e.x,ty-e.y)));
     let best=-1;
-    for(let i=want;i<=s.range&&best<0;i+=8) if(!circleHit(e.x+c*i,e.y+sn*i,s.r*.6)) best=i;   // look past walls first
-    for(let i=want-8;i>=120&&best<0;i-=8) if(!circleHit(e.x+c*i,e.y+sn*i,s.r*.6)) best=i;
+    for(let i=want;i>=100&&best<0;i-=8) if(!circleHit(e.x+c*i,e.y+sn*i,s.r*.6)) best=i;   // the other end sits at the cursor; if that is inside a wall, pull it back toward you
+    for(let i=want+8;i<=s.range&&best<0;i+=8) if(!circleHit(e.x+c*i,e.y+sn*i,s.r*.6)) best=i;
     if(best<0) return false;
-    const off=e.r+s.r+8, ax=e.x+c*off, ay=e.y+sn*off;
-    if(circleHit(ax,ay,s.r*.6)) return false;
+    const ax=e.x, ay=e.y;   // one end is right under you, so facing a wall never blocks it
     portals=portals.filter(p=>p.owner!==e);
     portals.push({ax,ay,bx:e.x+c*best,by:e.y+sn*best,r:s.r,owner:e,start:now,until:now+s.dur,color:s.color});
+    e.ptCd=now+1;   // standing in the mouth you just opened does not throw you through it
     fxRing(ax,ay,s.r*1.4,s.color,.5); fxRing(e.x+c*best,e.y+sn*best,s.r*1.4,s.color,.5); burst(ax,ay,s.color,16,200,.5,3.5); burst(e.x+c*best,e.y+sn*best,s.color,16,200,.5,3.5);
   },
   leap(e,s,a,tx,ty){
