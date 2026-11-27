@@ -1776,8 +1776,8 @@ const K={
     const ax=e.x, ay=e.y;   // one end is right under you, so facing a wall never blocks it
     portals=portals.filter(p=>p.owner!==e);
     portals.push({ax,ay,bx:e.x+c*best,by:e.y+sn*best,r:s.r,owner:e,start:now,until:now+s.dur,color:s.color});
-    e.ptLock=true;   // standing in the mouth you just opened does not throw you through it until you step out of it
     fxRing(ax,ay,s.r*1.4,s.color,.5); fxRing(e.x+c*best,e.y+sn*best,s.r*1.4,s.color,.5); burst(ax,ay,s.color,16,200,.5,3.5); burst(e.x+c*best,e.y+sn*best,s.color,16,200,.5,3.5);
+    e.x=e.px=e.x+c*best; e.y=e.py=e.y+sn*best; e.path=[]; e.ptLock=true;   // casting teleports you instantly to the far mouth; stay locked so you are not bounced straight back until you step out
   },
   leap(e,s,a,tx,ty){
     const p=clampTo(e,tx,ty,s.dist);
