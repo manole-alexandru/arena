@@ -1541,6 +1541,14 @@ const inTri=(p,x,y)=>{
   return !(((d1<0)||(d2<0)||(d3<0))&&((d1>0)||(d2>0)||(d3>0)));
 };
 const inSeal=(q,t)=>inTri(q.pts,t.x,t.y)||!!(q.refs&&q.refs.some(r=>r.mark===t));   // a marked champion is a corner of the seal
+// teleports cannot leave a Rune Seal: sealOut = would this point be outside the seal that holds e; sealClamp = walk from e toward a destination and stop at the seal edge (never inside a wall)
+function sealOut(e,x,y){ if(!(e.sealUntil>now)) return false; const q=seals.find(z=>z.id===e.sealId); return !!q&&!(q.refs&&q.refs.some(r=>r.mark===e))&&!inTri(q.pts,x,y); }
+function sealClamp(e,nx,ny){
+  if(!sealOut(e,nx,ny)) return [nx,ny];
+  const q=seals.find(z=>z.id===e.sealId), ox=e.x, oy=e.y, n=48; let bx=ox, by=oy;
+  for(let i=1;i<=n;i++){ const f=i/n, x=ox+(nx-ox)*f, y=oy+(ny-oy)*f; if(!inTri(q.pts,x,y)) break; if(!circleHit(x,y,e.r)){ bx=x; by=y; } }
+  return [bx,by];
+}
 function sealBreak(e){ if(!(e.sealUntil>now)) return false; const q=seals.find(z=>z.id===e.sealId); return !!q&&!inSeal(q,e); }
 function finishTele(e){
   const T=e.tele; e.tele=null;
@@ -1553,6 +1561,7 @@ function finishTele(e){
     for(let rad=16;rad<=200&&!found;rad+=16) for(let k=0;k<12;k++){ const aa=k*.5236, xx=cx+Math.cos(aa)*rad, yy=cy+Math.sin(aa)*rad; if(!circleHit(xx,yy,e.r)){ px=xx; py=yy; found=true; break; } }
     if(!found) return;
   }
+  const sc=sealClamp(e,px,py); px=sc[0]; py=sc[1];
   const ox=e.x, oy=e.y; e.x=e.px=px; e.y=e.py=py; e.path=[];
   fxRing(ox,oy,50,'#c79bff',.4); fxRing(px,py,70,'#c79bff',.5); fxFlash(px,py,60,'#ffffff',.2); burst(ox,oy,'#c79bff',16,200,.5,3.5); burst(px,py,'#c79bff',22,260,.6,4); fxTrail(ox,oy,px,py,'#c79bff');
 }
@@ -1607,8 +1616,9 @@ function updatePortals(){
       if(!inA&&!inB) continue;
       const fx0=inA?p.ax:p.bx, fy0=inA?p.ay:p.by, tx0=inA?p.bx:p.ax, ty0=inA?p.by:p.ay;
       burst(fx0,fy0,p.color,12,200,.4,3.5); fxRing(fx0,fy0,p.r,p.color,.3);
-      t.x=t.px=tx0; t.y=t.py=ty0; t.path=[]; t.ptLock=t.ptIn=true;
-      burst(tx0,ty0,p.color,14,220,.45,3.5); fxRing(tx0,ty0,p.r,p.color,.35); fxFlash(tx0,ty0,40,'#ffffff',.15);
+      const sc=sealClamp(t,tx0,ty0), ex=sc[0], ey=sc[1];
+      t.x=t.px=ex; t.y=t.py=ey; t.path=[]; t.ptLock=t.ptIn=true;
+      burst(ex,ey,p.color,14,220,.45,3.5); fxRing(ex,ey,p.r,p.color,.35); fxFlash(ex,ey,40,'#ffffff',.15);
     }
   }
   for(const t of ents) if(t.ptLock&&!t.ptIn) t.ptLock=false;
@@ -1681,8 +1691,8 @@ const K={
   blink(e,s,a,tx,ty){
     const ox=e.x, oy=e.y, dx=Math.cos(a), dy=Math.sin(a); let best=0;
     const want=Math.min(s.dist,Math.hypot((tx===undefined?1e9:tx)-ox,(ty===undefined?1e9:ty)-oy));
-    if(s.phase){ for(let i=want;i>=0;i-=6){ if(!circleHit(ox+dx*i,oy+dy*i,e.r)){ best=i; break; } } }
-    else for(let i=6;i<=want;i+=6){ if(circleHit(ox+dx*i,oy+dy*i,e.r)) break; best=i; }
+    if(s.phase){ for(let i=want;i>=0;i-=6){ if(!circleHit(ox+dx*i,oy+dy*i,e.r)&&!sealOut(e,ox+dx*i,oy+dy*i)){ best=i; break; } } }
+    else for(let i=6;i<=want;i+=6){ if(circleHit(ox+dx*i,oy+dy*i,e.r)||sealOut(e,ox+dx*i,oy+dy*i)) break; best=i; }
     e.x=ox+dx*best; e.y=oy+dy*best; e.path=[];
     fxRing(ox,oy,36,s.color,.3); fxRing(e.x,e.y,36,s.color,.3); fxTrail(ox,oy,e.x,e.y,s.color);
     burst(ox,oy,s.color,16,180,.45,3.5); burst(e.x,e.y,s.color,16,180,.45,3.5); fxFlash(e.x,e.y,34,s.color,.2);
@@ -1721,7 +1731,7 @@ const K={
     const ox=e.x, oy=e.y, off=t.r+e.r+6; let placed=false;
     for(const da of [0,.7,-.7,1.4,-1.4,Math.PI]){
       const ang=t.face+Math.PI+da, x=t.x+Math.cos(ang)*off, y=t.y+Math.sin(ang)*off;
-      if(!circleHit(x,y,e.r)){ e.x=x; e.y=y; placed=true; break; }
+      if(!circleHit(x,y,e.r)){ const sc=sealClamp(e,x,y); e.x=sc[0]; e.y=sc[1]; placed=true; break; }
     }
     if(!placed) return false;
     e.path=[]; e.face=Math.atan2(t.y-e.y,t.x-e.x);
@@ -1773,7 +1783,7 @@ const K={
     portals=portals.filter(p=>p.owner!==e);
     portals.push({ax,ay,bx:e.x+c*best,by:e.y+sn*best,r:s.r,owner:e,start:now,until:now+s.dur,color:s.color});
     fxRing(ax,ay,s.r*1.4,s.color,.5); fxRing(e.x+c*best,e.y+sn*best,s.r*1.4,s.color,.5); burst(ax,ay,s.color,16,200,.5,3.5); burst(e.x+c*best,e.y+sn*best,s.color,16,200,.5,3.5);
-    e.x=e.px=e.x+c*best; e.y=e.py=e.y+sn*best; e.path=[]; e.ptLock=true;   // casting teleports you instantly to the far mouth; stay locked so you are not bounced straight back until you step out
+    const sc=sealClamp(e,e.x+c*best,e.y+sn*best); e.x=e.px=sc[0]; e.y=e.py=sc[1]; e.path=[]; e.ptLock=true;   // casting teleports you instantly to the far mouth; stay locked so you are not bounced straight back until you step out
   },
   leap(e,s,a,tx,ty){
     const p=clampTo(e,tx,ty,s.dist);
@@ -2569,7 +2579,12 @@ function tryMove(e,dx,dy){
   tryMove1(e,dx,dy);
 }
 function tryMove1(e,dx,dy){
-  if(flies(e)){ e.x=clamp(e.x+dx,T*1.5,MW*T-T*1.5); e.y=clamp(e.y+dy,T*1.5,MH*T-T*1.5); return; }
+  if(flies(e)){   // fliers ignore walls but a Rune Seal still holds them
+    const fx=e.x, fy=e.y;
+    e.x=clamp(e.x+dx,T*1.5,MW*T-T*1.5); if(e.sealUntil>now&&sealBreak(e)) e.x=fx;
+    e.y=clamp(e.y+dy,T*1.5,MH*T-T*1.5); if(e.sealUntil>now&&sealBreak(e)) e.y=fy;
+    return;
+  }
   const ox=e.x, oy=e.y;
   if(!circleHit(e.x+dx,e.y,e.r)&&!boxBlock(e,e.x+dx,e.y)) e.x+=dx;
   if(e.sealUntil>now&&sealBreak(e)) e.x=ox;
